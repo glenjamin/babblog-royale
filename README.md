@@ -20,7 +20,7 @@ Currently handles:
 
 ## Usage
 
-With Node.js installed, run `parser.js` with a file.
+With Node.js installed, run `main.js` with a file.
 
 The commandline interface is just how I've started, my intention is to turn this into a website.
 
@@ -34,7 +34,7 @@ On windows the file is at 'C:\\Users\\[YOURUSERNAME]\\AppData\\LocalLow\\Everybo
 eg
 
 ```sh
-> node parser.js ~/Library/Logs/Everybody\ House\ Games/BabbleRoyale/Player.log
+> node main.js ~/Library/Logs/Everybody\ House\ Games/BabbleRoyale/Player.log
 {
   games: [
     {

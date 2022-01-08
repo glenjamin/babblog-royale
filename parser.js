@@ -1,155 +1,127 @@
-const fs = require("fs");
-const readline = require("readline");
-
-/**
- * @typedef {{
- *   name: string
- * }} Player
- *
- * @typedef {{
- *   { type: 'hot' } & Player
- *   | { type: 'word', killer: string, word: string } & Player
- * }} Kill
- *
- * @typedef {{
- *   players: Player[],
- *   boards: string[],
- *   kills: Kill[],
- *   winner: Player | null,
- *   you: {
- *     MRR: number,
- *     oldMRR: number,
- *     position: number,
- *   }
- * }} Game
- */
-
 const HOT_ZONE = "the hot zone";
 
 /**
- * @param {Player[]} players
+ * @typedef { import("./types").Game } Game
+ */
+
+/**
+ * @param {boolean} golden
+ * @param {{name: string, socketID: string}[]} players
  *
  * @returns {Game}
  */
-function newGame(players) {
+function newGame(golden, players) {
   return {
-    players: players.map(({ name }) => ({ name })),
-    boards: [],
+    golden,
+    players: players.map(({ name, socketID }, index) => ({
+      socketID,
+      name,
+      index,
+    })),
+    board: {
+      size: 32,
+      base: [], // TODO: bonus tiles
+      steps: [],
+    },
     kills: [],
     winner: null,
     you: {
-      MRR: 0,
-      oldMRR: 0,
+      MMR: 0,
+      oldMMR: 0,
       position: 0,
     },
   };
 }
 
-function newParser() {
-  /**
-   * @type {Game[]}
-   */
-  const games = [];
+export function newParser() {
   /**
    * @type {Game}
    */
   let game;
+
+  /**
+   * @type {Array<typeof game>}
+   */
+  const games = [];
+
   const handlers = {
     /**
-     * @param {{
-     *   playerList: Player[]
-     * }}
+     * @param {Events['Joined']} payload
      */
-    Joined({ playerList }) {
-      game = newGame(playerList);
+    Joined({ goldenRoyale, playerList }) {
+      game = newGame(goldenRoyale, playerList);
       games.push(game);
     },
 
+    /**
+     * @param {Events['SyncNewBoardState']} payload
+     */
     SyncNewBoardState(payload) {
       // console.log(payload);
+      // TODO: append to steps
     },
 
     /**
-     *
-     * @param {{
-     *  playerName: string,
-     *  playerKilledBy: string,
-     *  killedByWord: string,
-     * }}
+     * @param {Events['NewPlayerDeath']} payload
      */
-    NewPlayerDeath({ playerName, playerKilledBy, killedByWord }) {
-      if (playerKilledBy == HOT_ZONE) {
-        game.kills.push({ type: "hot", name: playerName });
+    NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {
+      if (by == HOT_ZONE) {
+        game.kills.push({ type: "hot", player });
       } else {
-        game.kills.push({
-          type: "word",
-          name: playerName,
-          killer: playerKilledBy,
-          word: killedByWord,
-        });
+        game.kills.push({ type: "word", player, by, word: killedByWord });
       }
     },
 
     /**
-     * @param {{
-     *   winnerIndex: number
-     * }}
+     * @param {Events['EndGame']} payload
      */
     EndGame({ winnerIndex }) {
-      game.winner = game.players[winnerIndex];
+      game.winner = game.players[winnerIndex].name;
     },
 
     /**
-     * @param {{
-     *   newMMR: number,
-     *   oldMMR: number,
-     *   placement: number,
-     * }}
+     * @param {Events['FinalItemsAndMMR']} payload
      */
     FinalItemsAndMMR({ newMMR, oldMMR, placement }) {
       game.you = {
-        MRR: newMMR,
+        MMR: newMMR,
         oldMMR,
         position: placement,
       };
     },
   };
 
+  let buffer = "";
+  /**
+   * @param {string} line
+   */
+  function handleLine(line) {
+    if (line[0] != "[" || line[1] != '"') return;
+    /**
+     * @type [keyof Events, any]
+     */
+    const [event, payload] = JSON.parse(line);
+    const handler = handlers[event];
+    if (handler) handler(payload);
+  }
+
   return {
     /**
-     * @param {string} line
+     * @param {string} chunk
      */
-    parse(line) {
-      if (line[0] != "[" || line[1] != '"') return;
-      const [event, payload] = JSON.parse(line);
-      const handler = handlers[event];
-      if (handler) handler(payload);
+    parse(chunk) {
+      buffer += chunk;
+      const lines = buffer.split(/\r?\n/);
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        handleLine(line);
+      }
+    },
+    end() {
+      handleLine(buffer);
     },
     dump() {
       return { games };
     },
   };
-}
-
-if (require.main === module) {
-  const filename = process.argv[2];
-  if (!filename) {
-    console.warn(`Usage: node parser.js <path-to-babble-royale-player-log>
-    
-On macOS the file is at '~/Library/Logs/Everybody House Games/BabbleRoyale/Player.log'
-On windows the file is at 'C:\\Users\\[YOURUSERNAME]\\AppData\\LocalLow\\Everybody House Games\\BabbleRoyale\\Player.log'
-`);
-    process.exit(1);
-  }
-  const parser = newParser();
-  const stream = readline.createInterface({
-    input: fs.createReadStream(filename),
-    crlfDelay: Infinity,
-  });
-  stream.on("line", (line) => {
-    parser.parse(line);
-  });
-  stream.once("close", () => {
-    console.dir(parser.dump(), { depth: 5 });
-  });
 }
