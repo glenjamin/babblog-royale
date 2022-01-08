@@ -1,15 +1,36 @@
 export type Events = {
   Joined: {
+    room: number;
     goldenRoyale: boolean;
     playerList: Array<{
-      name: string;
-      socketID: string;
+      name: PlayerName;
+      socketID: SocketID;
+    }>;
+    squaresWithMults: Array<{
+      index: number;
+      wordScoreMult: 2 | 3;
+    }>;
+    squaresWithItems: Array<{
+      index: number;
+      itemOnSquare: Bonus;
     }>;
   };
-  SyncNewBoardState: {};
+  SyncNewBoardState: {
+    squaresWithLetters: Array<{
+      letter: Letter;
+      playerLivingOn: SocketID | null;
+    }>;
+    playerScores: Array<{
+      socketID: SocketID;
+      /**
+       * -7347 is a magic number meaning dead
+       */
+      score: number;
+    }>;
+  };
   NewPlayerDeath: {
-    playerName: string;
-    playerKilledBy: string;
+    playerName: PlayerName;
+    playerKilledBy: PlayerName;
     killedByWord: string;
   };
   EndGame: {
@@ -22,17 +43,25 @@ export type Events = {
   };
 };
 
-export type Player = string;
+interface PlayerName$ extends String {
+  isPlayerName: true;
+}
+export type PlayerName = PlayerName$ & string;
+
+interface SocketID$ extends String {
+  isSocketID: true;
+}
+export type SocketID = SocketID$ & string;
 
 export type PlayerDetails = {
-  name: string;
-  socketID: string;
+  name: PlayerName;
+  socketID: SocketID;
   index: number;
 };
 
 export type Kill =
-  | { type: "hot"; player: Player }
-  | { type: "word"; player: Player; by: Player; word: string };
+  | { type: "hot"; player: PlayerName }
+  | { type: "word"; player: PlayerName; by: PlayerName; word: string };
 
 export type Letter =
   | "a"
@@ -73,18 +102,19 @@ export type Bonus =
   | "letter_s";
 
 export type Game = {
+  id: number;
   golden: boolean;
   players: Array<PlayerDetails>;
   board: {
     size: 32;
     base: Array<Bonus | null>;
-    steps: {
+    steps: Array<{
       letters: Array<Letter | null>;
-      owners: Array<Player | null>;
-    }[];
+      owners: Array<PlayerName | null>;
+    }>;
   };
   kills: Array<Kill>;
-  winner: Player | null;
+  winner: PlayerName | null;
   you: {
     MMR: number;
     oldMMR: number;

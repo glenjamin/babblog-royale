@@ -6,6 +6,9 @@
     "type": "git",
     "url": "git+https://github.com/glenjamin/babblog-royale.git"
   },
+  "scripts": {
+    "test": "tsc && prettier --check ."
+  },
   "author": "Glen Mailer <glenjamin@gmail.com>",
   "license": "MIT",
   "type": "module",

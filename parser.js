@@ -2,36 +2,8 @@ const HOT_ZONE = "the hot zone";
 
 /**
  * @typedef { import("./types").Game } Game
+ * @typedef { import("./types").Events} Events
  */
-
-/**
- * @param {boolean} golden
- * @param {{name: string, socketID: string}[]} players
- *
- * @returns {Game}
- */
-function newGame(golden, players) {
-  return {
-    golden,
-    players: players.map(({ name, socketID }, index) => ({
-      socketID,
-      name,
-      index,
-    })),
-    board: {
-      size: 32,
-      base: [], // TODO: bonus tiles
-      steps: [],
-    },
-    kills: [],
-    winner: null,
-    you: {
-      MMR: 0,
-      oldMMR: 0,
-      position: 0,
-    },
-  };
-}
 
 export function newParser() {
   /**
@@ -48,8 +20,28 @@ export function newParser() {
     /**
      * @param {Events['Joined']} payload
      */
-    Joined({ goldenRoyale, playerList }) {
-      game = newGame(goldenRoyale, playerList);
+    Joined({ room, goldenRoyale, playerList }) {
+      game = {
+        id: room,
+        golden: goldenRoyale,
+        players: playerList.map(({ name, socketID }, index) => ({
+          socketID,
+          name,
+          index,
+        })),
+        board: {
+          size: 32,
+          base: [], // TODO: bonus tiles
+          steps: [],
+        },
+        kills: [],
+        winner: null,
+        you: {
+          MMR: 0,
+          oldMMR: 0,
+          position: 0,
+        },
+      };
       games.push(game);
     },
 
