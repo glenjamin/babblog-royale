@@ -12,9 +12,15 @@ const readline = require("readline");
  * }} Kill
  *
  * @typedef {{
- *  players: Player[],
- *  kills: Kill[],
- *  winner: Player | null,
+ *   players: Player[],
+ *   boards: string[],
+ *   kills: Kill[],
+ *   winner: Player | null,
+ *   you: {
+ *     MRR: number,
+ *     oldMRR: number,
+ *     position: number,
+ *   }
  * }} Game
  */
 
@@ -28,8 +34,14 @@ const HOT_ZONE = "the hot zone";
 function newGame(players) {
   return {
     players: players.map(({ name }) => ({ name })),
+    boards: [],
     kills: [],
     winner: null,
+    you: {
+      MRR: 0,
+      oldMRR: 0,
+      position: 0,
+    },
   };
 }
 
@@ -46,19 +58,24 @@ function newParser() {
     /**
      * @param {{
      *   playerList: Player[]
-     * }} payload
+     * }}
      */
-    Joined(payload) {
-      game = newGame(payload.playerList);
+    Joined({ playerList }) {
+      game = newGame(playerList);
       games.push(game);
     },
+
+    SyncNewBoardState(payload) {
+      // console.log(payload);
+    },
+
     /**
      *
      * @param {{
      *  playerName: string,
      *  playerKilledBy: string,
      *  killedByWord: string,
-     * }} payload
+     * }}
      */
     NewPlayerDeath({ playerName, playerKilledBy, killedByWord }) {
       if (playerKilledBy == HOT_ZONE) {
@@ -74,13 +91,27 @@ function newParser() {
     },
 
     /**
-     *
      * @param {{
      *   winnerIndex: number
-     * }} payload
+     * }}
      */
-    EndGame(payload) {
-      game.winner = game.players[payload.winnerIndex];
+    EndGame({ winnerIndex }) {
+      game.winner = game.players[winnerIndex];
+    },
+
+    /**
+     * @param {{
+     *   newMMR: number,
+     *   oldMMR: number,
+     *   placement: number,
+     * }}
+     */
+    FinalItemsAndMMR({ newMMR, oldMMR, placement }) {
+      game.you = {
+        MRR: newMMR,
+        oldMMR,
+        position: placement,
+      };
     },
   };
 
