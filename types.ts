@@ -17,6 +17,7 @@ export type Events = {
   };
   SyncNewBoardState: {
     squaresWithLetters: Array<{
+      index: number;
       letter: Letter;
       playerLivingOn: SocketID | null;
     }>;
@@ -92,10 +93,10 @@ export type Letter =
   | "z";
 
 export type Bonus =
-  | "2xWord"
-  | "3xWord"
-  | "3xLetter"
-  | "5xLetter"
+  | "2x_word"
+  | "3x_word"
+  | "3x_letter"
+  | "5x_letter"
   | "bomb"
   | "reroll_all"
   | "medkit"
@@ -108,7 +109,7 @@ export type Game = {
   board: {
     size: 32;
     base: Array<Bonus | null>;
-    steps: Array<{
+    timeline: Array<{
       letters: Array<Letter | null>;
       owners: Array<PlayerName | null>;
     }>;

@@ -20,7 +20,13 @@ export function newParser() {
     /**
      * @param {Events['Joined']} payload
      */
-    Joined({ room, goldenRoyale, playerList }) {
+    Joined({
+      room,
+      goldenRoyale,
+      playerList,
+      squaresWithMults,
+      squaresWithItems,
+    }) {
       game = {
         id: room,
         golden: goldenRoyale,
@@ -31,8 +37,8 @@ export function newParser() {
         })),
         board: {
           size: 32,
-          base: [], // TODO: bonus tiles
-          steps: [],
+          base: Array(1024),
+          timeline: [],
         },
         kills: [],
         winner: null,
@@ -42,15 +48,40 @@ export function newParser() {
           position: 0,
         },
       };
+
+      squaresWithMults.forEach(({ index, wordScoreMult }) => {
+        game.board.base[index] = wordScoreMult == 2 ? "2x_word" : "3x_word";
+      });
+      squaresWithItems.forEach(({ index, itemOnSquare }) => {
+        game.board.base[index] = itemOnSquare;
+      });
+
       games.push(game);
     },
 
     /**
      * @param {Events['SyncNewBoardState']} payload
      */
-    SyncNewBoardState(payload) {
-      // console.log(payload);
-      // TODO: append to steps
+    SyncNewBoardState({ squaresWithLetters }) {
+      /**
+       * @type {Game['board']['timeline'][0]}
+       */
+      const state = {
+        letters: Array(1024),
+        owners: Array(1024),
+      };
+
+      squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
+        state.letters[index] = letter;
+        if (playerLivingOn) {
+          const player = game.players.find(
+            ({ socketID }) => socketID == playerLivingOn
+          );
+          state.owners[index] = player ? player.name : null;
+        }
+      });
+
+      game.board.timeline.push(state);
     },
 
     /**
