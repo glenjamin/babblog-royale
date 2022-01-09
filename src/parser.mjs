@@ -5,7 +5,7 @@ const HOT_ZONE = "the hot zone";
  * @typedef { import("./types").Events} Events
  */
 
-exports.newParser = function newParser() {
+export function newParser() {
   /**
    * @type {Game}
    */
@@ -51,7 +51,7 @@ exports.newParser = function newParser() {
       };
 
       squaresWithMults.forEach(({ index, wordScoreMult }) => {
-        game.board.base[index] = wordScoreMult == 2 ? "2x_word" : "3x_word";
+        game.board.base[index] = wordScoreMult === 2 ? "2x_word" : "3x_word";
       });
       squaresWithItems.forEach(({ index, itemOnSquare }) => {
         game.board.base[index] = itemOnSquare;
@@ -76,7 +76,7 @@ exports.newParser = function newParser() {
         state.letters[index] = letter;
         if (playerLivingOn) {
           const player = game.players.find(
-            ({ socketID }) => socketID == playerLivingOn
+            ({ socketID }) => socketID === playerLivingOn
           );
           state.owners[index] = player ? player.name : null;
         }
@@ -89,7 +89,7 @@ exports.newParser = function newParser() {
      * @param {Events['NewPlayerDeath']} payload
      */
     NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {
-      if (by == HOT_ZONE) {
+      if (by === HOT_ZONE) {
         game.kills.push({ type: "hot", player });
       } else {
         game.kills.push({ type: "word", player, by, word: killedByWord });
@@ -120,7 +120,7 @@ exports.newParser = function newParser() {
    * @param {string} line
    */
   function handleLine(line) {
-    if (line[0] != "[" || line[1] != '"') return;
+    if (line[0] !== "[" || line[1] !== '"') return;
     /**
      * @type [keyof Events, any]
      */
@@ -148,4 +148,4 @@ exports.newParser = function newParser() {
       return { games };
     },
   };
-};
+}

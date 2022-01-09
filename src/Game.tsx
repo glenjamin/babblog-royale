@@ -5,7 +5,7 @@ import Col from "react-bootstrap/Col";
 import { Bonus, Letter, PlayerName, Game } from "./types";
 
 import styles from "./Game.module.css";
-import { newParser } from "./parser";
+import { newParser } from "./parser.mjs";
 import { useState } from "react";
 
 function GameViewer() {

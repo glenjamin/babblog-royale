@@ -1,5 +1,5 @@
-const fs = require("fs");
-const { newParser } = require("./src/parser");
+import fs from "fs";
+import { newParser } from "./src/parser.mjs";
 
 const filename = process.argv[2];
 if (!filename) {
