@@ -29,12 +29,19 @@ function GameGrid() {
           {range.map((_, col) => (
             <td key={col}>
               {Math.random() > 0.9 ? (
-                <LetterCell letter="a" owner={null} />
+                <LetterCell
+                  letter={
+                    String.fromCharCode(
+                      97 + Math.floor(Math.random() * 26)
+                    ) as any
+                  }
+                  owner={null}
+                />
               ) : Math.random() > 0.95 ? (
                 <BonusCell
                   bonus={
                     Object.keys(bonusContentMap)[
-                      Math.round(Math.random() * 8)
+                      Math.floor(Math.random() * 8)
                     ] as any
                   }
                 />
