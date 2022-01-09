@@ -11,10 +11,10 @@ Currently handles:
 - Kills per game
 - Game winner (if you stayed to the end)
 - Your MMR change and position
+- Extract board states
 
 ## Roadmap
 
-- Extract board states
 - Render visually on a webpage that will receive local logs
 - Scroll backwards and forwards in time
 - Show the scoreboard progress
