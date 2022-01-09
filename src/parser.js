@@ -1,11 +1,11 @@
 const HOT_ZONE = "the hot zone";
 
 /**
- * @typedef { import("./types").Game } Game
- * @typedef { import("./types").Events} Events
+ * @typedef { import("../types").Game } Game
+ * @typedef { import("../types").Events} Events
  */
 
-export function newParser() {
+exports.newParser = function newParser() {
   /**
    * @type {Game}
    */
@@ -148,4 +148,4 @@ export function newParser() {
       return { games };
     },
   };
-}
+};
