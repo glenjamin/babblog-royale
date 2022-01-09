@@ -23,6 +23,7 @@ export function newParser() {
     Joined({
       room,
       goldenRoyale,
+      gridWidth,
       playerList,
       squaresWithMults,
       squaresWithItems,
@@ -36,8 +37,8 @@ export function newParser() {
           index,
         })),
         board: {
-          size: 32,
-          base: Array(1024),
+          size: gridWidth,
+          base: Array(gridWidth * gridWidth),
           timeline: [],
         },
         kills: [],
@@ -67,8 +68,8 @@ export function newParser() {
        * @type {Game['board']['timeline'][0]}
        */
       const state = {
-        letters: Array(1024),
-        owners: Array(1024),
+        letters: Array(game.board.size * game.board.size),
+        owners: Array(game.board.size * game.board.size),
       };
 
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {

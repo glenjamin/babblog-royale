@@ -2,6 +2,7 @@ export type Events = {
   Joined: {
     room: number;
     goldenRoyale: boolean;
+    gridWidth: number;
     playerList: Array<{
       name: PlayerName;
       socketID: SocketID;
@@ -107,7 +108,7 @@ export type Game = {
   golden: boolean;
   players: Array<PlayerDetails>;
   board: {
-    size: 32;
+    size: number;
     base: Array<Bonus | null>;
     timeline: Array<{
       letters: Array<Letter | null>;

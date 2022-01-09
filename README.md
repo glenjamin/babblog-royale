@@ -17,6 +17,11 @@ Currently handles:
 - Extract board states
 - Render visually on a webpage that will receive local logs
 - Scroll backwards and forwards in time
+- Show the scoreboard progress
+- Include the hot zone
+- Include player tiles / HP
+- Figure out which words people played
+- Allow export/import of individual parsed games
 
 ## Usage
 
