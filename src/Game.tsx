@@ -2,18 +2,50 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
-import { Bonus, Letter, PlayerName } from "./types";
+import { Bonus, Letter, PlayerName, Game } from "./types";
 
 import styles from "./Game.module.css";
+import { newParser } from "./parser";
+import { useState } from "react";
 
-function Game() {
+function GameViewer() {
+  const [games, setGames] = useState<Game[]>([]);
+
+  async function parseFile(file: Blob) {
+    console.log("handling...");
+    const parser = newParser();
+    // The type cast is required because @types/node messes with the DOM type
+    // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
+    const reader = (file.stream() as unknown as ReadableStream).getReader();
+    // TODO: use TextDecoder to handle possible codepoint boundaries?
+    const utf8Decoder = new TextDecoder("utf-8");
+    while (true) {
+      let { value, done } = await reader.read();
+      console.log("decoding...");
+      const chunk = utf8Decoder.decode(value, { stream: !done });
+      parser.parse(chunk);
+      if (done) break;
+    }
+    parser.end();
+    setGames(parser.dump().games);
+  }
   return (
     <Container fluid>
       <Row>
         <Col>
           <GameGrid />
         </Col>
-        <Col>Sidebar</Col>
+        <Col>
+          <input
+            type="file"
+            onChange={(e) => parseFile(e.target.files?.[0]!)}
+          />
+          {games.map((game) => (
+            <p key={game.id}>
+              {game.id}: won by {game.winner}
+            </p>
+          ))}
+        </Col>
       </Row>
     </Container>
   );
@@ -24,34 +56,36 @@ function GameGrid() {
   const range = Array(size).fill(0);
   return (
     <table cellSpacing={0} cellPadding={0} className={styles.board}>
-      {range.map((_, row) => (
-        <tr key={row}>
-          {range.map((_, col) => (
-            <td key={col}>
-              {Math.random() > 0.9 ? (
-                <LetterCell
-                  letter={
-                    String.fromCharCode(
-                      97 + Math.floor(Math.random() * 26)
-                    ) as any
-                  }
-                  owner={null}
-                />
-              ) : Math.random() > 0.95 ? (
-                <BonusCell
-                  bonus={
-                    Object.keys(bonusContentMap)[
-                      Math.floor(Math.random() * 8)
-                    ] as any
-                  }
-                />
-              ) : (
-                <EmptyCell />
-              )}
-            </td>
-          ))}
-        </tr>
-      ))}
+      <tbody>
+        {range.map((_, row) => (
+          <tr key={row}>
+            {range.map((_, col) => (
+              <td key={col}>
+                {Math.random() > 0.9 ? (
+                  <LetterCell
+                    letter={
+                      String.fromCharCode(
+                        97 + Math.floor(Math.random() * 26)
+                      ) as any
+                    }
+                    owner={null}
+                  />
+                ) : Math.random() > 0.95 ? (
+                  <BonusCell
+                    bonus={
+                      Object.keys(bonusContentMap)[
+                        Math.floor(Math.random() * 8)
+                      ] as any
+                    }
+                  />
+                ) : (
+                  <EmptyCell />
+                )}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
     </table>
   );
 }
@@ -99,4 +133,4 @@ function BonusCell({ bonus }: BonusProps): JSX.Element {
   );
 }
 
-export default Game;
+export default GameViewer;
