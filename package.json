@@ -16,7 +16,7 @@
   "bugs": {
     "url": "https://github.com/glenjamin/babblog-royale/issues"
   },
-  "homepage": "https://glenjamin.github.io/babblog-royale",
+  "homepage": "https://babblog-royale.netlify.app/",
   "devDependencies": {
     "@tsconfig/create-react-app": "^1.0.2",
     "@types/node": "^17.0.8",
