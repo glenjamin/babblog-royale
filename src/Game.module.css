@@ -1,0 +1,45 @@
+.board {
+  margin: 1px;
+}
+
+.cell {
+  width: 25px;
+  height: 25px;
+  margin: 1px;
+  text-align: center;
+}
+
+.empty {
+  composes: cell;
+  background-color: #eee;
+  overflow: hidden;
+}
+
+.bonusMultiplier {
+  composes: empty;
+  padding-top: 3px;
+  line-height: 10px;
+  font-size: 75%;
+}
+
+.bonusWord {
+  composes: bonusMultiplier;
+  color: #77d;
+}
+
+.bonusLetter {
+  composes: bonusMultiplier;
+  color: #9c9;
+}
+
+.bonusItem {
+  composes: empty;
+}
+
+.letter {
+  composes: cell;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  background-color: #777;
+  color: #eee;
+  line-height: 25px;
+}

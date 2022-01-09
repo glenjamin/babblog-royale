@@ -25,7 +25,7 @@ stream.once("close", () => {
 
 /**
  *
- * @param {import("./types.js").Game['board']} board
+ * @param {import("./src/types.js").Game['board']} board
  */
 function printBoard(board) {
   const side = board.size;
