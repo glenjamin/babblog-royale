@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import ProgressBar from "react-bootstrap/ProgressBar";
 
 import { Game } from "./types";
 import { newParser } from "./parser.mjs";
@@ -15,11 +16,30 @@ interface ImportProps {
   onClose(): void;
 }
 
+function useThrottle<Args extends any[]>(
+  fn: (...args: Args) => void,
+  limit: number
+): (...args: Args) => void {
+  const last = useRef(0);
+  return useCallback(
+    (...args) => {
+      const now = Date.now();
+      if (now - last.current > limit) {
+        last.current = now;
+        fn(...args);
+      }
+    },
+    [fn]
+  );
+}
+
 function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
-  const [loading, setLoading] = useState(false);
+  const [fileSize, setFileSize] = useState(0);
+  const [progress, rawSetProgress] = useState(0);
+  const setProgress = useThrottle(rawSetProgress, 100);
 
   async function parseFile(file: Blob) {
-    setLoading(true);
+    setFileSize(file.size);
     const parser = newParser();
     // The type cast is required because @types/node messes with the DOM type
     // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
@@ -32,11 +52,17 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
       handled += value?.length || 0;
       const chunk = utf8Decoder.decode(value, { stream: !done });
       parser.parse(chunk);
+      setProgress(handled);
       if (done) break;
     }
+    rawSetProgress(file.size);
     parser.end();
-    setLoading(false);
-    onImport(parser.dump().games);
+
+    setTimeout(() => {
+      setFileSize(0);
+      rawSetProgress(0);
+      onImport(parser.dump().games);
+    }, 500);
   }
 
   return (
@@ -76,7 +102,7 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
             </Form.Text>
           </Form.Group>
         </Form>
-        {loading && <p>Loading...</p>}
+        {fileSize > 0 && <ProgressBar animated max={fileSize} now={progress} />}
       </Modal.Body>
 
       <Modal.Footer>
