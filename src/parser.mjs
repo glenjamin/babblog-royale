@@ -144,8 +144,8 @@ export function newParser() {
     end() {
       handleLine(buffer);
     },
-    dump() {
-      return { games };
+    games() {
+      return games;
     },
   };
 }

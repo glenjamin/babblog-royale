@@ -15,10 +15,10 @@ const stream = fs.createReadStream(filename);
 stream.on("data", (chunk) => parser.parse(chunk.toString()));
 stream.once("close", () => {
   parser.end();
-  const dump = parser.dump();
-  console.dir(dump, { depth: 6 });
+  const games = parser.games();
+  console.dir(games, { depth: 6 });
 
-  const last = dump.games[dump.games.length - 1];
+  const last = games[games.length - 1];
 
   printBoard(last.board);
 });

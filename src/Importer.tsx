@@ -37,9 +37,13 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
   const [fileSize, setFileSize] = useState(0);
   const [progress, rawSetProgress] = useState(0);
   const setProgress = useThrottle(rawSetProgress, 100);
+  const [error, setError] = useState<string>();
 
   async function parseFile(file: Blob) {
+    setError(undefined);
     setFileSize(file.size);
+    rawSetProgress(0);
+
     const parser = newParser();
     // The type cast is required because @types/node messes with the DOM type
     // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
@@ -58,10 +62,16 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
     rawSetProgress(file.size);
     parser.end();
 
+    const games = parser.games();
+    if (games.length === 0) {
+      setError("No games found in log file. Try another file.");
+      return;
+    }
+
     setTimeout(() => {
       setFileSize(0);
       rawSetProgress(0);
-      onImport(parser.dump().games);
+      onImport(games);
     }, 500);
   }
 
@@ -77,15 +87,19 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
             <Form.Label column sm={2}>
               Log File
             </Form.Label>
-            <Col>
+            <Form.Group as={Col}>
               <Form.Control
                 type="file"
                 aria-describedby="logFileHelp"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   parseFile(e.target.files?.[0]!)
                 }
+                isInvalid={!!error}
               />
-            </Col>
+              <Form.Control.Feedback type="invalid">
+                {error}
+              </Form.Control.Feedback>
+            </Form.Group>
             <Form.Text id="logFileHelp" muted>
               <p className="mt-3">
                 On Windows this can be found at{" "}
