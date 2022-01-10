@@ -87,19 +87,27 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
               />
             </Col>
             <Form.Text id="logFileHelp" muted>
-              On Windows this can be found at{" "}
-              <code>
-                C:\Users\[YOURUSERNAME]\AppData\LocalLow\Everybody House
-                Games\BabbleRoyale\Player.log
-              </code>
-              .
-              <br />
-              On macOS this can be found at{" "}
-              <code>
-                ~/Library/Logs/Everybody House Games/BabbleRoyale/Player.log
-              </code>
-              .
+              <p className="mt-3">
+                On Windows this can be found at{" "}
+                <code>
+                  C:\Users\[YOURUSERNAME]\AppData\LocalLow\Everybody House
+                  Games\BabbleRoyale\Player.log
+                </code>
+                .
+              </p>
+              <p>
+                On macOS this can be found at{" "}
+                <code>
+                  ~/Library/Logs/Everybody House Games/BabbleRoyale/Player.log
+                </code>
+                .
+              </p>
+              <p>
+                The file will not be uploaded to any server, all processing
+                takes place inside your web browser.
+              </p>
             </Form.Text>
+            <Form.Text></Form.Text>
           </Form.Group>
         </Form>
         {fileSize > 0 && (
