@@ -3,5 +3,6 @@
   "compilerOptions": {
     "checkJs": true,
     "plugins": [{ "name": "typescript-plugin-css-modules" }]
-  }
+  },
+  "exclude": ["build"]
 }

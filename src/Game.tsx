@@ -1,6 +1,7 @@
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Form from "react-bootstrap/Form";
 
 import { Bonus, Letter, PlayerName, Game } from "./types";
 
@@ -35,11 +36,37 @@ function GameViewer() {
         <Col>
           <GameGrid />
         </Col>
-        <Col>
-          <input
-            type="file"
-            onChange={(e) => parseFile(e.target.files?.[0]!)}
-          />
+        <Col className="p-3">
+          <Form>
+            <Form.Group as={Row} controlId="logFile" className="mb-3">
+              <Form.Label column sm={2}>
+                Log File
+              </Form.Label>
+              <Col>
+                <Form.Control
+                  type="file"
+                  aria-describedby="logFileHelp"
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    parseFile(e.target.files?.[0]!)
+                  }
+                />
+              </Col>
+              <Form.Text id="logFileHelp" muted>
+                On Windows this can be found at{" "}
+                <code>
+                  C:\Users\[YOURUSERNAME]\AppData\LocalLow\Everybody House
+                  Games\BabbleRoyale\Player.log
+                </code>
+                .
+                <br />
+                On macOS this can be found at{" "}
+                <code>
+                  ~/Library/Logs/Everybody House Games/BabbleRoyale/Player.log
+                </code>
+                .
+              </Form.Text>
+            </Form.Group>
+          </Form>
           {games.map((game) => (
             <p key={game.id}>
               {game.id}: won by {game.winner}
