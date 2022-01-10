@@ -17,6 +17,7 @@ Currently handles:
 
 - Render visually on a webpage that will receive local logs
 - Scroll backwards and forwards in time
+- Keep track of when items get collected
 - Show the scoreboard progress
 - Include the hot zone
 - Include player tiles / HP

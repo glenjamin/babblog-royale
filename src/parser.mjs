@@ -34,7 +34,7 @@ export function newParser() {
         players: playerList.map(({ name, socketID }, index) => ({
           socketID,
           name,
-          index,
+          index: playerIndex(index),
         })),
         board: {
           size: gridWidth,
@@ -148,4 +148,15 @@ export function newParser() {
       return { games };
     },
   };
+}
+
+/**
+ * @param {number} i
+ * @returns {import("./types").PlayerIndex}
+ */
+function playerIndex(i) {
+  if (i < 0 || i > 15) {
+    throw new Error("invalid player index");
+  }
+  return /** @type {any} */ (i);
 }

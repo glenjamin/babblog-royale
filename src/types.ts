@@ -55,10 +55,28 @@ interface SocketID$ extends String {
 }
 export type SocketID = SocketID$ & string;
 
+export type PlayerIndex =
+  | 0
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15;
+
 export type PlayerDetails = {
   name: PlayerName;
   socketID: SocketID;
-  index: number;
+  index: PlayerIndex;
 };
 
 export type Kill =

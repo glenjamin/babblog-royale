@@ -4,8 +4,9 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
+import Form from "react-bootstrap/Form";
 
-import { Bonus, Letter, PlayerName, Game } from "./types";
+import { Bonus, Letter, PlayerName, Game, PlayerIndex } from "./types";
 
 import styles from "./Game.module.css";
 
@@ -14,15 +15,13 @@ interface GameViewerProps {
   showImport(): void;
 }
 function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
-  const [loading, setLoading] = useState(false);
+  const [game, setGame] = useState<Game>();
   return (
     <Container fluid>
       <Row>
-        <Col>
-          <GameGrid />
-        </Col>
+        <Col>{game && <GameGrid key={game.id} game={game} />}</Col>
         <Col className="p-3">
-          {games.length === 0 && (
+          {games.length === 0 ? (
             <Row>
               <Col className="text-center">
                 <Button
@@ -34,52 +33,65 @@ function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
                 </Button>
               </Col>
             </Row>
+          ) : (
+            <Row>
+              <Form.Select
+                onChange={(e) => setGame(games[parseFloat(e.target.value)])}
+              >
+                <option value="-1">Select a game</option>
+                {games.map((game, index) => (
+                  <option key={game.id} value={index}>
+                    Game #{game.id}: Position {game.you.position} to MRR{" "}
+                    {Math.round(game.you.MMR)}
+                  </option>
+                ))}
+              </Form.Select>
+            </Row>
           )}
-          <Row>
-            {games.map((game) => (
-              <p key={game.id}>
-                {game.id}: won by {game.winner}
-              </p>
-            ))}
-          </Row>
         </Col>
       </Row>
     </Container>
   );
 }
 
-function GameGrid() {
-  const size = 31;
+interface GameGridProps {
+  game: Game;
+}
+function GameGrid({ game }: GameGridProps) {
+  const size = game.board.size;
   const range = Array(size).fill(0);
+  const state = game.board.timeline[game.board.timeline.length - 1];
+  const playerIndexes = {} as Record<PlayerName, PlayerIndex>;
+  game.players.forEach((p) => {
+    playerIndexes[p.name] = p.index;
+  });
   return (
     <table cellSpacing={0} cellPadding={0} className={styles.board}>
       <tbody>
         {range.map((_, row) => (
           <tr key={row}>
-            {range.map((_, col) => (
-              <td key={col}>
-                {Math.random() > 0.9 ? (
-                  <LetterCell
-                    letter={
-                      String.fromCharCode(
-                        97 + Math.floor(Math.random() * 26)
-                      ) as any
-                    }
-                    owner={null}
-                  />
-                ) : Math.random() > 0.95 ? (
-                  <BonusCell
-                    bonus={
-                      Object.keys(bonusContentMap)[
-                        Math.floor(Math.random() * 8)
-                      ] as any
-                    }
-                  />
-                ) : (
-                  <EmptyCell />
-                )}
-              </td>
-            ))}
+            {range
+              .map((_, col) => {
+                const index = row * size + col;
+                const letter = state.letters[index];
+                const owner = state.owners[index];
+                if (letter) {
+                  return (
+                    <LetterCell
+                      letter={letter}
+                      owner={owner && playerIndexes[owner]}
+                    />
+                  );
+                }
+                const bonus = game.board.base[index];
+                if (bonus) {
+                  return <BonusCell bonus={bonus} />;
+                }
+                return <EmptyCell />;
+              })
+              .map((cell, col) => (
+                <td key={col}>{cell}</td>
+              ))}
           </tr>
         ))}
       </tbody>
@@ -91,12 +103,38 @@ function EmptyCell() {
   return <div className={styles.empty} />;
 }
 
+const ownerColours = {
+  0: "blue",
+  1: "red",
+  2: "orange",
+  3: "purple",
+  4: "green",
+  5: "yellow",
+  6: "cyan",
+  7: "magenta",
+  8: "darkblue",
+  9: "forestgreen",
+  10: "olive",
+  11: "brown",
+  12: "darkred",
+  13: "pink",
+  14: "gold",
+  15: "silver",
+} as const;
+
 interface LetterProps {
   letter: Letter;
-  owner: PlayerName | null;
+  owner: PlayerIndex | null;
 }
 function LetterCell({ letter, owner }: LetterProps): JSX.Element {
-  return <div className={styles.letter}>{letter.toUpperCase()}</div>;
+  return (
+    <div
+      className={styles.letter}
+      style={owner ? { backgroundColor: ownerColours[owner] } : undefined}
+    >
+      {letter.toUpperCase()}
+    </div>
+  );
 }
 
 const bonusTypeMap = {
