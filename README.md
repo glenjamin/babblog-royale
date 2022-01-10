@@ -2,6 +2,8 @@
 
 Babble Royale log parser and viewer
 
+[Open the Web App](https://babblog-royale.netlify.app/)
+
 ## Overview
 
 Currently handles:
@@ -12,23 +14,22 @@ Currently handles:
 - Game winner (if you stayed to the end)
 - Your MMR change and position
 - Extract board states
+- Render visually on a webpage that will receive local logs
+- Scroll backwards and forwards in time
 
 ## Roadmap
 
-- Render visually on a webpage that will receive local logs
-- Scroll backwards and forwards in time
 - Keep track of when items get collected
 - Show the scoreboard progress
 - Include the hot zone
+- Figure out which player is the current player
 - Include player tiles / HP
-- Figure out which words people played
+- Figure out which words/bombs people played
 - Allow export/import of individual parsed games
 
-## Usage
+## Commandline usage
 
 With Node.js installed, run `main.js` with a file.
-
-The commandline interface is just how I've started, my intention is to turn this into a website.
 
 ```sh
 Usage: node parser.js <path-to-babble-royale-player-log>
