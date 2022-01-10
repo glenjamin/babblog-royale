@@ -6,9 +6,83 @@ import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 
-import { Bonus, Letter, PlayerName, Game, PlayerIndex } from "./types";
+import {
+  Bonus,
+  Letter,
+  PlayerName,
+  Game,
+  PlayerIndex,
+  SocketID,
+  PlayerDetails,
+} from "./types";
 
 import styles from "./Game.module.css";
+
+const players: PlayerDetails[] = [
+  "JohnL",
+  "PaulMcC",
+  "George",
+  "Ringo",
+  "David",
+  "Freddie",
+  "BrianM",
+  "Roger",
+  "JohnD",
+  "Mick",
+  "BrianJ",
+  "Keith",
+  "Bill",
+  "Charlie",
+  "Simon",
+  "PaulG",
+].map((name, i) => ({
+  name: name as PlayerName,
+  socketID: ("xx_" + name) as SocketID,
+  index: i as PlayerIndex,
+}));
+
+const initialGame: Game = {
+  id: 0,
+  golden: true,
+  players,
+  board: {
+    size: 31,
+    base: [],
+    timeline: [{ letters: [], owners: [] }],
+  },
+  kills: [],
+  winner: null,
+  you: {
+    MMR: 0,
+    oldMMR: 0,
+    position: 0,
+  },
+};
+
+[
+  "the",
+  "first",
+  "and",
+  "original",
+  "babble",
+  "royale",
+  "player",
+  "log",
+  "file",
+  "viewer",
+  "made",
+  "by",
+  "glenjamin",
+  "aka",
+  "glenathan",
+].forEach((word, i) => {
+  const player = players[i];
+  const offset = 1 + (1 + i * 2) * initialGame.board.size;
+  Array.from(word).forEach((letter, i) => {
+    initialGame.board.timeline[0].letters[offset + i] = letter as Letter;
+    initialGame.board.timeline[0].owners[offset + i] = player.name;
+  });
+});
 
 interface GameViewerProps {
   games: Game[];
@@ -19,7 +93,9 @@ function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
   return (
     <Container fluid>
       <Row>
-        <Col>{game && <GameGrid key={game.id} game={game} />}</Col>
+        <Col>
+          <GameGrid game={game || initialGame} />
+        </Col>
         <Col className="p-3">
           {games.length === 0 ? (
             <Row>
@@ -60,7 +136,7 @@ interface GameGridProps {
 function GameGrid({ game }: GameGridProps) {
   const size = game.board.size;
   const range = Array(size).fill(0);
-  const state = game.board.timeline[game.board.timeline.length - 1];
+  const state = game.board.timeline[0];
   const playerIndexes = {} as Record<PlayerName, PlayerIndex>;
   game.players.forEach((p) => {
     playerIndexes[p.name] = p.index;
@@ -104,22 +180,22 @@ function EmptyCell() {
 }
 
 const ownerColours = {
-  0: "blue",
-  1: "red",
-  2: "orange",
-  3: "purple",
-  4: "green",
-  5: "yellow",
-  6: "cyan",
-  7: "magenta",
-  8: "darkblue",
-  9: "forestgreen",
-  10: "olive",
-  11: "brown",
-  12: "darkred",
-  13: "pink",
-  14: "gold",
-  15: "silver",
+  0: "#68D", // blue
+  1: "#c4e", // violet
+  2: "#862", // gold
+  3: "#4c1", // lime
+  4: "#596", // teal
+  5: "#f55", // rose
+  6: "#170", // green
+  7: "#d01", // red
+  8: "#099", // cyan
+  9: "#d42", // orange
+  10: "#a26", //pink
+  11: "#dc1", // yellow
+  12: "#773", // olive
+  13: "#11a", // dark blue
+  14: "#561", // dark olive
+  15: "#d99", //darkred
 } as const;
 
 interface LetterProps {
@@ -130,7 +206,9 @@ function LetterCell({ letter, owner }: LetterProps): JSX.Element {
   return (
     <div
       className={styles.letter}
-      style={owner ? { backgroundColor: ownerColours[owner] } : undefined}
+      style={
+        owner !== null ? { backgroundColor: ownerColours[owner] } : undefined
+      }
     >
       {letter.toUpperCase()}
     </div>
