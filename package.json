@@ -7,7 +7,7 @@
     "url": "git+https://github.com/glenjamin/babblog-royale.git"
   },
   "scripts": {
-    "start": "BROWSER=none TSC_COMPILE_ON_ERROR=true DISABLE_ESLINT_PLUGIN=true react-scripts start",
+    "start": "BROWSER=none TSC_COMPILE_ON_ERROR=true react-scripts start",
     "build": "react-scripts build",
     "test": "tsc && prettier --check ."
   },

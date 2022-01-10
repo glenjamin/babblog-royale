@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -29,7 +29,7 @@ function useThrottle<Args extends any[]>(
         fn(...args);
       }
     },
-    [fn]
+    [fn, limit]
   );
 }
 
