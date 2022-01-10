@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
+import Pagination from "react-bootstrap/Pagination";
+import ListGroup from "react-bootstrap/ListGroup";
 
 import {
   Bonus,
@@ -41,7 +43,7 @@ const players: PlayerDetails[] = [
   index: i as PlayerIndex,
 }));
 
-const initialGame: Game = {
+const placeholderGame: Game = {
   id: 0,
   golden: true,
   players,
@@ -77,10 +79,10 @@ const initialGame: Game = {
   "glenathan",
 ].forEach((word, i) => {
   const player = players[i];
-  const offset = 1 + (1 + i * 2) * initialGame.board.size;
+  const offset = 1 + (1 + i * 2) * placeholderGame.board.size;
   Array.from(word).forEach((letter, i) => {
-    initialGame.board.timeline[0].letters[offset + i] = letter as Letter;
-    initialGame.board.timeline[0].owners[offset + i] = player.name;
+    placeholderGame.board.timeline[0].letters[offset + i] = letter as Letter;
+    placeholderGame.board.timeline[0].owners[offset + i] = player.name;
   });
 });
 
@@ -89,41 +91,96 @@ interface GameViewerProps {
   showImport(): void;
 }
 function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
-  const [game, setGame] = useState<Game>();
+  const [chosenGame, setChosenGame] = useState<Game>();
+  const [step, setStep] = useState(0);
+  const activateGame = useCallback((game: Game) => {
+    setChosenGame(game);
+    setStep(0);
+  }, []);
+  const game = chosenGame || placeholderGame;
+  const maxStep = game.board.timeline.length - 1;
   return (
     <Container fluid>
       <Row>
         <Col>
-          <GameGrid game={game || initialGame} />
+          <GameGrid game={game} step={step} />
         </Col>
         <Col className="p-3">
           {games.length === 0 ? (
             <Row>
-              <Col className="text-center">
+              <Col className="text-center mt-5">
                 <Button
                   variant="outline-secondary"
                   size="lg"
                   onClick={() => showImport()}
                 >
-                  Import Logs...
+                  Import a log file to get started
                 </Button>
               </Col>
             </Row>
           ) : (
             <Row>
-              <Form.Select
-                onChange={(e) => setGame(games[parseFloat(e.target.value)])}
-              >
-                <option value="-1">Select a game</option>
-                {games.map((game, index) => (
-                  <option key={game.id} value={index}>
-                    Game #{game.id}: Position {game.you.position} to MRR{" "}
-                    {Math.round(game.you.MMR)}
-                  </option>
-                ))}
-              </Form.Select>
+              <Col>
+                <Form.Select
+                  onChange={(e) => activateGame(games[Number(e.target.value)])}
+                >
+                  <option value="-1">Select a game</option>
+                  {games.map((game, index) => (
+                    <option key={game.id} value={index}>
+                      Game #{game.id}: Position {game.you.position} to MRR{" "}
+                      {Math.round(game.you.MMR)}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Col>
             </Row>
           )}
+
+          <Row className="justify-content-sm-center">
+            <Col className="mt-3" sm="auto">
+              <Pagination>
+                <Pagination.Prev
+                  disabled={step === 0}
+                  onClick={() => setStep((i) => i - 1)}
+                >
+                  Back
+                </Pagination.Prev>
+                <Pagination.Item disabled>Step {step + 1}</Pagination.Item>
+                <Pagination.Next
+                  disabled={step === maxStep}
+                  onClick={() => setStep((i) => i + 1)}
+                >
+                  Forwards
+                </Pagination.Next>
+              </Pagination>
+            </Col>
+          </Row>
+          <Row className="justify-content-sm-center">
+            <Col className="mb-3" sm="auto">
+              <Form.Range
+                min="0"
+                max={maxStep}
+                value={step}
+                onChange={(e) => setStep(Number(e.target.value))}
+              />
+            </Col>
+          </Row>
+
+          <Row>
+            <Col>
+              <ListGroup>
+                {game.players.map((player) => (
+                  <ListGroup.Item
+                    key={player.socketID}
+                    className="d-flex flex-row align-items-center p-1"
+                  >
+                    <LetterCell letter="a" owner={player} />
+                    <div className="ms-2">{player.name}</div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </Col>
+          </Row>
         </Col>
       </Row>
     </Container>
@@ -132,14 +189,15 @@ function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
 
 interface GameGridProps {
   game: Game;
+  step: number;
 }
-function GameGrid({ game }: GameGridProps) {
+function GameGrid({ game, step }: GameGridProps) {
   const size = game.board.size;
   const range = Array(size).fill(0);
-  const state = game.board.timeline[0];
-  const playerIndexes = {} as Record<PlayerName, PlayerIndex>;
+  const state = game.board.timeline[step];
+  const playerByName = {} as Record<PlayerName, PlayerDetails>;
   game.players.forEach((p) => {
-    playerIndexes[p.name] = p.index;
+    playerByName[p.name] = p;
   });
   return (
     <table cellSpacing={0} cellPadding={0} className={styles.board}>
@@ -155,7 +213,7 @@ function GameGrid({ game }: GameGridProps) {
                   return (
                     <LetterCell
                       letter={letter}
-                      owner={owner && playerIndexes[owner]}
+                      owner={owner && playerByName[owner]}
                     />
                   );
                 }
@@ -200,15 +258,14 @@ const ownerColours = {
 
 interface LetterProps {
   letter: Letter;
-  owner: PlayerIndex | null;
+  owner: PlayerDetails | null;
 }
 function LetterCell({ letter, owner }: LetterProps): JSX.Element {
   return (
     <div
       className={styles.letter}
-      style={
-        owner !== null ? { backgroundColor: ownerColours[owner] } : undefined
-      }
+      title={owner ? owner.name : undefined}
+      style={owner ? { backgroundColor: ownerColours[owner.index] } : undefined}
     >
       {letter.toUpperCase()}
     </div>
