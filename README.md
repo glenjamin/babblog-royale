@@ -4,6 +4,8 @@ Babble Royale log parser and viewer
 
 [Open the Web App](https://babblog-royale.netlify.app/)
 
+![Sample of the viewer in use](https://user-images.githubusercontent.com/151272/148801659-3cc06acf-5f86-4d0e-99d6-c391cd9f0e41.png)
+
 ## Overview
 
 Currently handles:
