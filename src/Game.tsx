@@ -108,7 +108,7 @@ function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
         <Col className="p-3">
           {games.length === 0 ? (
             <Row>
-              <Col className="text-center mt-5">
+              <Col className="text-center my-2">
                 <Button
                   variant="outline-secondary"
                   size="lg"
