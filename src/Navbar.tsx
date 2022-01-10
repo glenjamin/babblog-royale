@@ -33,7 +33,7 @@ function AppNavbar({ showImport }: AppNavbarProps) {
         <Navbar.Collapse className="justify-content-end">
           <Navbar.Text>
             Created by Glenjamin on{" "}
-            <a href="github.com/glenjamin/babblog-royale/">GitHub</a>
+            <a href="https://github.com/glenjamin/babblog-royale/">GitHub</a>
           </Navbar.Text>
         </Navbar.Collapse>
       </Container>
