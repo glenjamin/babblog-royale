@@ -10,7 +10,7 @@ interface AppNavbarProps {
 }
 function AppNavbar({ showImport }: AppNavbarProps) {
   return (
-    <Navbar bg="light" expand>
+    <Navbar bg="light" expand="md">
       <Container fluid>
         <Navbar.Brand>
           <img
@@ -29,6 +29,12 @@ function AppNavbar({ showImport }: AppNavbarProps) {
               Import...
             </Button>
           </Nav>
+        </Navbar.Collapse>
+        <Navbar.Collapse className="justify-content-end">
+          <Navbar.Text>
+            Created by Glenjamin on{" "}
+            <a href="github.com/glenjamin/babblog-royale/">GitHub</a>
+          </Navbar.Text>
         </Navbar.Collapse>
       </Container>
     </Navbar>
