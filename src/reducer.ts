@@ -35,7 +35,7 @@ const handlers: Handlers = {
   importGames(state, { games }) {
     return update(state, {
       games,
-      gameIndex: -1,
+      gameIndex: games.length > 0 ? 0 : -1,
       gameStep: 0,
       showImportDialog: false,
     });
@@ -97,7 +97,7 @@ function update<T>(state: T, changes: Partial<T>): T {
   return Object.assign({}, state, changes);
 }
 
-export function useAppReducer(): [State, Actions] {
+export default function useAppReducer(): [State, Actions] {
   const [state, dispatch] = useReducer(reducer, initialState);
   const actions = useMemo(() => {
     const x = {} as Actions;

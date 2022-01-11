@@ -1,14 +1,24 @@
 import Container from "react-bootstrap/Container";
+import Stack from "react-bootstrap/Stack";
 import Navbar from "react-bootstrap/Navbar";
-import Nav from "react-bootstrap/Nav";
+import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+
+import GamePicker from "./GamePicker";
+
+import { Game } from "./types";
 
 import icon from "./icon.png";
 
 interface AppNavbarProps {
-  showImport(): void;
+  showImport: () => void;
+  games: Game[];
+  activeGameIndex: number;
+  chooseGame: (index: number) => void;
 }
-function AppNavbar({ showImport }: AppNavbarProps) {
+
+function AppNavbar(props: AppNavbarProps): JSX.Element {
+  const { showImport, games, activeGameIndex, chooseGame } = props;
   return (
     <Navbar bg="light" expand="md">
       <Container fluid>
@@ -24,11 +34,23 @@ function AppNavbar({ showImport }: AppNavbarProps) {
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <Button variant="outline-secondary" onClick={showImport}>
-              Import...
-            </Button>
-          </Nav>
+          <Form>
+            <Stack direction="horizontal" gap={3}>
+              <Button
+                variant={games.length === 0 ? "primary" : "outline-secondary"}
+                onClick={showImport}
+              >
+                Import...
+              </Button>
+              {games.length > 0 && (
+                <GamePicker
+                  games={games}
+                  index={activeGameIndex}
+                  onPick={chooseGame}
+                />
+              )}
+            </Stack>
+          </Form>
         </Navbar.Collapse>
         <Navbar.Collapse className="justify-content-end">
           <Navbar.Text>
