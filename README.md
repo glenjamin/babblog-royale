@@ -8,26 +8,30 @@ Babble Royale log parser and viewer
 
 ## Overview
 
-Currently handles:
+The UI allows you to load a game and browse backwards and forwards though the board states.
+
+The underlying log parser currently handles:
 
 - Extracting games
 - Players per game
 - Kills per game
 - Game winner (if you stayed to the end)
 - Your MMR change and position
-- Extract board states
-- Render visually on a webpage that will receive local logs
-- Scroll backwards and forwards in time
+- Each board state
 
 ## Roadmap
 
 - Keep track of when items get collected
-- Show the scoreboard progress
+- Show kills and wins on the UI
+- Show the scoreboard progress on the UI
 - Include the hot zone
-- Figure out which player is the current player
+- Figure out which player is the current player and make them always blue
 - Include player tiles / HP
 - Figure out which words/bombs people played
 - Allow export/import of individual parsed games
+- Allow sharing links to games
+
+If you have more ideas or suggestions, please open an issue on GitHub.
 
 ## Commandline usage
 
