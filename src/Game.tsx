@@ -169,9 +169,9 @@ function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
           <Row>
             <Col>
               <ListGroup>
-                {game.players.map((player) => (
+                {game.players.map((player, i) => (
                   <ListGroup.Item
-                    key={player.socketID}
+                    key={i}
                     className="d-flex flex-row align-items-center p-1"
                   >
                     <LetterCell letter="a" owner={player} />
