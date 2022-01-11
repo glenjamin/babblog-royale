@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
@@ -99,6 +99,14 @@ function GameViewer({ games, showImport }: GameViewerProps): JSX.Element {
   }, []);
   const game = chosenGame || placeholderGame;
   const maxStep = game.board.timeline.length - 1;
+
+  // Upon importing for the first time, load the first game
+  useEffect(() => {
+    if (!chosenGame && games.length) {
+      activateGame(games[0]);
+    }
+  }, [games, chosenGame, activateGame]);
+
   return (
     <Container fluid>
       <Row>
