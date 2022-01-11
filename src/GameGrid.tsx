@@ -4,8 +4,13 @@ import styles from "./Game.module.css";
 interface GameGridProps {
   game: Game;
   step: number;
+  selectedPlayer: number | null;
 }
-export default function GameGrid({ game, step }: GameGridProps) {
+export default function GameGrid({
+  game,
+  step,
+  selectedPlayer,
+}: GameGridProps) {
   const size = game.board.size;
   const range = Array(size).fill(0);
   const state = game.board.timeline[step];
@@ -39,6 +44,11 @@ export default function GameGrid({ game, step }: GameGridProps) {
                     <LetterCell
                       letter={letter}
                       owner={owner && playerByName[owner]}
+                      isSelected={
+                        owner
+                          ? selectedPlayer === playerByName[owner].index
+                          : false
+                      }
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />
@@ -85,13 +95,26 @@ const ownerColours = {
 interface LetterProps {
   letter: Letter;
   owner: PlayerDetails | null;
+  isSelected?: boolean;
 }
-export function LetterCell({ letter, owner }: LetterProps): JSX.Element {
+export function LetterCell({
+  letter,
+  owner,
+  isSelected = false,
+}: LetterProps): JSX.Element {
+  const colour = owner ? ownerColours[owner.index] : "";
   return (
     <div
       className={styles.letter}
       title={owner ? owner.name : undefined}
-      style={owner ? { backgroundColor: ownerColours[owner.index] } : undefined}
+      style={
+        owner
+          ? {
+              backgroundColor: colour,
+              filter: isSelected ? `drop-shadow(0 0 8px ${colour})` : "",
+            }
+          : undefined
+      }
     >
       {letter.toUpperCase()}
     </div>

@@ -16,7 +16,8 @@ import useAppReducer from "./reducer";
 
 function App() {
   const [state, actions] = useAppReducer();
-  const { games, gameIndex, gameStep, showImportDialog } = state;
+  const { games, gameIndex, gameStep, selectedPlayer, showImportDialog } =
+    state;
 
   const game = games[gameIndex] || placeholderGame;
   const maxStep = game.board.timeline.length - 1;
@@ -37,7 +38,11 @@ function App() {
       <Container fluid>
         <Row>
           <Col>
-            <GameGrid game={game} step={gameStep} />
+            <GameGrid
+              game={game}
+              step={gameStep}
+              selectedPlayer={selectedPlayer}
+            />
           </Col>
           <Col>
             {/* Sidebar */}
@@ -49,7 +54,11 @@ function App() {
                 stepBack={actions.stepBack}
                 stepForwards={actions.stepForwards}
               />
-              <PlayerList players={game.players} />
+              <PlayerList
+                players={game.players}
+                selectedPlayer={selectedPlayer}
+                selectPlayer={actions.selectPlayer}
+              />
             </Stack>
           </Col>
         </Row>

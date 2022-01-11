@@ -4,20 +4,54 @@ import { PlayerDetails } from "./types";
 
 interface PlayerListProps {
   players: PlayerDetails[];
+  selectedPlayer: number | null;
+  selectPlayer: (player: number | null) => void;
 }
-function PlayerList({ players }: PlayerListProps): JSX.Element {
+function PlayerList({
+  players,
+  selectedPlayer,
+  selectPlayer,
+}: PlayerListProps): JSX.Element {
   return (
     <ListGroup>
       {players.map((player, i) => (
-        <ListGroup.Item
-          key={i}
-          className="d-flex flex-row align-items-center p-1"
-        >
-          <LetterCell letter="a" owner={player} />
-          <div className="ms-2">{player.name}</div>
-        </ListGroup.Item>
+        <PlayerListItem
+          player={player}
+          isSelected={selectedPlayer === i}
+          index={i}
+          selectPlayer={selectPlayer}
+        />
       ))}
     </ListGroup>
+  );
+}
+
+interface PlayerListItemProps {
+  player: PlayerDetails;
+  index: number;
+  isSelected: boolean;
+  selectPlayer: (player: number | null) => void;
+}
+function PlayerListItem({
+  player,
+  index,
+  isSelected,
+  selectPlayer,
+}: PlayerListItemProps): JSX.Element {
+  return (
+    <ListGroup.Item
+      key={player.index}
+      className={`d-flex flex-row align-items-center p-1 ${
+        isSelected && "bg-info text-white"
+      }`}
+      onClick={() => selectPlayer(isSelected ? null : index)}
+      style={{
+        cursor: "pointer",
+      }}
+    >
+      <LetterCell letter="a" owner={player} />
+      <div className="ms-2">{player.name}</div>
+    </ListGroup.Item>
   );
 }
 
