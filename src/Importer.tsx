@@ -125,12 +125,15 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
           </Form.Group>
         </Form>
         {fileSize > 0 && (
-          <ProgressBar
-            animated
-            label={`${fileSize}/${progress}B`}
-            max={fileSize}
-            now={progress}
-          />
+          <div>
+            <span>Loading file&hellip;</span>
+            <ProgressBar
+              animated
+              label={`${fileSize}/${progress}B`}
+              max={fileSize}
+              now={progress}
+            />
+          </div>
         )}
       </Modal.Body>
 
