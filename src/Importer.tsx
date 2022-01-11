@@ -62,6 +62,9 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
     rawSetProgress(file.size);
     parser.end();
 
+    setFileSize(0);
+    rawSetProgress(0);
+
     const games = parser.games();
     if (games.length === 0) {
       setError("No games found in log file. Try another file.");
@@ -69,8 +72,6 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
     }
 
     setTimeout(() => {
-      setFileSize(0);
-      rawSetProgress(0);
       onImport(games);
     }, 500);
   }
@@ -125,15 +126,15 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
           </Form.Group>
         </Form>
         {fileSize > 0 && (
-          <div>
-            <span>Loading file&hellip;</span>
+          <>
+            <p>Loading file&hellip;</p>
             <ProgressBar
               animated
               label={`${fileSize}/${progress}B`}
               max={fileSize}
               now={progress}
             />
-          </div>
+          </>
         )}
       </Modal.Body>
 
