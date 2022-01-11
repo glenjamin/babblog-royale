@@ -91,6 +91,7 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
               <Form.Control
                 type="file"
                 aria-describedby="logFileHelp"
+                accept=".log"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   parseFile(e.target.files?.[0]!)
                 }
