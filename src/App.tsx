@@ -1,30 +1,21 @@
-import { useCallback, useState } from "react";
-
 import Navbar from "./Navbar";
 import GameViewer from "./Game";
 
-import { Game } from "./types";
 import Importer from "./Importer";
+import { useAppReducer } from "./reducer";
 
 function App() {
-  const [importShown, setShowImport] = useState(false);
-  const [games, setGames] = useState<Game[]>([]);
-
-  const showImport = useCallback(() => setShowImport(true), [setShowImport]);
-  const hideImport = useCallback(() => setShowImport(false), [setShowImport]);
-  const onImport = useCallback(
-    (games: Game[]) => {
-      setGames(games);
-      hideImport();
-    },
-    [hideImport, setGames]
-  );
+  const [state, actions] = useAppReducer();
 
   return (
     <>
-      <Navbar showImport={showImport} />
-      <Importer show={importShown} onImport={onImport} onClose={hideImport} />
-      <GameViewer games={games} showImport={showImport} />
+      <Navbar showImport={actions.showImport} />
+      <Importer
+        show={state.showImportDialog}
+        onImport={actions.importGames}
+        onClose={actions.cancelImport}
+      />
+      <GameViewer games={state.games} showImport={actions.showImport} />
     </>
   );
 }
