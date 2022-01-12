@@ -18,7 +18,6 @@
 
 .bonusMultiplier {
   composes: empty;
-  padding-top: 3px;
   line-height: 10px;
   font-size: 75%;
 }

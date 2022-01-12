@@ -6,6 +6,7 @@ type State = {
   gameIndex: number; // index into games
   gameStep: number; // index into game timeline
   showImportDialog: boolean;
+  selectedPlayer: number | null; // index into players
 };
 
 const initialState: State = {
@@ -13,6 +14,7 @@ const initialState: State = {
   gameIndex: -1,
   gameStep: 0,
   showImportDialog: false,
+  selectedPlayer: null,
 };
 
 const creators = {
@@ -23,6 +25,7 @@ const creators = {
   chooseStep: (step: number) => ({ step }),
   stepBack: () => {},
   stepForwards: () => {},
+  selectPlayer: (player: number | null) => ({ player }),
 };
 
 const handlers: Handlers = {
@@ -38,10 +41,15 @@ const handlers: Handlers = {
       gameIndex: games.length - 1,
       gameStep: 0,
       showImportDialog: false,
+      selectedPlayer: null,
     });
   },
   chooseGame(state, { index }) {
-    return update(state, { gameIndex: index, gameStep: 0 });
+    return update(state, {
+      gameIndex: index,
+      gameStep: 0,
+      selectedPlayer: null,
+    });
   },
   chooseStep(state, { step }) {
     const { gameIndex, games } = state;
@@ -61,6 +69,9 @@ const handlers: Handlers = {
       name: "chooseStep",
       payload: { step: state.gameStep + 1 },
     });
+  },
+  selectPlayer(state, { player }) {
+    return update(state, { selectedPlayer: player });
   },
 };
 
