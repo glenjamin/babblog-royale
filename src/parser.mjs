@@ -157,7 +157,7 @@ export function newParser() {
     CloseCircle({ indexesToClose }) {
       hot = hot.slice();
       indexesToClose.forEach((i) => {
-        hot[i] = "warm";
+        if (!hot[i]) hot[i] = "warm";
       });
     },
   };
