@@ -41,13 +41,10 @@ function PlayerListItem({
   return (
     <ListGroup.Item
       key={player.index}
-      className={`d-flex flex-row align-items-center p-1 ${
-        isSelected && "bg-info text-white"
-      }`}
+      className={`d-flex flex-row align-items-center p-1`}
       onClick={() => selectPlayer(isSelected ? null : index)}
-      style={{
-        cursor: "pointer",
-      }}
+      action
+      active={isSelected}
     >
       <LetterCell letter="a" owner={player} />
       <div className="ms-2">{player.name}</div>
