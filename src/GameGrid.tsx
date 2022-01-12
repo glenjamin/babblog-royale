@@ -18,59 +18,48 @@ export default function GameGrid({ game, step }: GameGridProps) {
       <tbody>
         {range.map((_, row) => (
           <tr key={row}>
-            {range
-              .map((_, col) => {
-                const index = row * size + col;
-                const letter = state.letters[index];
-                const owner = state.owners[index];
-                let gas = "none";
-                if(state.squaresWithGas.includes(index)) {
-                  gas = "gas";
-                } else if (state.squaresGoingToHaveGas.includes(index)) {
-                  gas = "danger";
-                }
-                const gasOverlayElement = GasOverlay(gas);
-                if (letter) {
-                  return [gasOverlayElement, 
+            {range.map((_, col) => {
+              const index = row * size + col;
+              const letter = state.letters[index];
+              const owner = state.owners[index];
+              const bonus = game.board.base[index];
+
+              return (
+                <td key={col}>
+                  <GasOverlay
+                    type={
+                      state.squaresWithGas.includes(index)
+                        ? "gas"
+                        : state.squaresGoingToHaveGas.includes(index)
+                        ? "danger"
+                        : "none"
+                    }
+                  />
+                  {letter ? (
                     <LetterCell
                       letter={letter}
                       owner={owner && playerByName[owner]}
-                    />];
-                }
-                const bonus = game.board.base[index];
-                if (bonus) {
-                  return [gasOverlayElement, <BonusCell bonus={bonus} />];
-                }
-                return [gasOverlayElement,<EmptyCell />];
-              })
-              .map((elements, col) => (
-                <td key={col}>{elements}</td>
-              ))}
+                    />
+                  ) : bonus ? (
+                    <BonusCell bonus={bonus} />
+                  ) : (
+                    <EmptyCell />
+                  )}
+                </td>
+              );
+            })}
           </tr>
         ))}
       </tbody>
     </table>
   );
 }
-function GasOverlay(type: string): JSX.Element | null {
-  if(type === "gas") {
-    return (
-      <div
-        className = {styles.gas}
-      ></div>
-    );
-  }
 
-  if(type === "danger") {
-    return (
-      <div
-        className = {styles.danger}
-      ></div>
-    );
-  }
-
-  return null;
-  
+interface GasOverlayProps {
+  type: "gas" | "danger" | "none";
+}
+function GasOverlay({ type }: GasOverlayProps): JSX.Element | null {
+  return type === "none" ? null : <div className={styles[type]}></div>;
 }
 function EmptyCell() {
   return <div className={styles.empty} />;
@@ -91,7 +80,7 @@ const ownerColours = {
   12: "#773",
   13: "#11a",
   14: "#561",
-  15: "#d99", //darkred
+  15: "#d99",
 } as const;
 interface LetterProps {
   letter: Letter;
