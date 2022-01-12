@@ -2,7 +2,7 @@ const HOT_ZONE = "the hot zone";
 
 /**
  * @typedef { import("./types").Game } Game
- * @typedef { import("./types").Events} Events
+ * @typedef { import("./types").Events } Events
  */
 
 export function newParser() {
@@ -17,15 +17,10 @@ export function newParser() {
   const games = [];
 
   /**
-   *  @type {Array<number>}
+   *  @type {Array<"hot" | "warm">}
    */
-  let squaresWithGas = [];
+  let hot = [];
 
-  /**
-   *  @type {Array<number>}
-   */
-   let squaresGoingToHaveGas = [];
-  
   const handlers = {
     /**
      * @param {Events['Joined']} payload
@@ -60,8 +55,7 @@ export function newParser() {
         },
       };
 
-      squaresWithGas = [];
-      squaresGoingToHaveGas = [];
+      hot = [];
 
       squaresWithMults.forEach(({ index, wordScoreMult }) => {
         game.board.base[index] = wordScoreMult === 2 ? "2x_word" : "3x_word";
@@ -74,6 +68,11 @@ export function newParser() {
     },
 
     /**
+     * @param {Events['EndDropPhase']} payload
+     */
+    EndDropPhase({ startingPosition: { x, y } }) {},
+
+    /**
      * @param {Events['SyncNewBoardState']} payload
      */
     SyncNewBoardState({ squaresWithLetters }) {
@@ -81,10 +80,9 @@ export function newParser() {
        * @type {Game['board']['timeline'][0]}
        */
       const state = {
-        letters: Array(game.board.size * game.board.size),
-        owners: Array(game.board.size * game.board.size),
-        squaresWithGas: squaresWithGas,
-        squaresGoingToHaveGas: squaresGoingToHaveGas,
+        letters: [],
+        owners: [],
+        hot,
       };
 
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
@@ -93,7 +91,7 @@ export function newParser() {
           const player = game.players.find(
             ({ socketID }) => socketID === playerLivingOn
           );
-          state.owners[index] = player ? player.name : null;
+          if (player) state.owners[index] = player.index;
         }
       });
 
@@ -133,16 +131,21 @@ export function newParser() {
      * @param {Events['CloseCircleChunk']} payload
      */
     CloseCircleChunk({ indexesToClose }) {
-      squaresWithGas = squaresWithGas.concat(indexesToClose);
+      hot = hot.slice();
+      indexesToClose.forEach((i) => {
+        hot[i] = "hot";
+      });
     },
 
     /**
      * @param {Events['CloseCircle']} payload
      */
-     CloseCircle({ indexesToClose }) {
-      squaresGoingToHaveGas = squaresGoingToHaveGas.concat(indexesToClose);
+    CloseCircle({ indexesToClose }) {
+      hot = hot.slice();
+      indexesToClose.forEach((i) => {
+        hot[i] = "warm";
+      });
     },
-    
   };
 
   let buffer = "";

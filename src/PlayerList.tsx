@@ -16,6 +16,7 @@ function PlayerList({
     <ListGroup>
       {players.map((player, i) => (
         <PlayerListItem
+          key={i}
           player={player}
           isSelected={selectedPlayer === i}
           index={i}
@@ -40,7 +41,6 @@ function PlayerListItem({
 }: PlayerListItemProps): JSX.Element {
   return (
     <ListGroup.Item
-      key={player.index}
       className={`d-flex flex-row align-items-center p-1`}
       onClick={() => selectPlayer(isSelected ? null : index)}
       action

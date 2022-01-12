@@ -1,4 +1,4 @@
-import { Bonus, Letter, PlayerName, Game, PlayerDetails } from "./types";
+import { Bonus, Letter, Game, PlayerDetails, HotZone } from "./types";
 import styles from "./Game.module.css";
 
 interface GameGridProps {
@@ -14,10 +14,6 @@ export default function GameGrid({
   const size = game.board.size;
   const range = Array(size).fill(0);
   const state = game.board.timeline[step];
-  const playerByName = {} as Record<PlayerName, PlayerDetails>;
-  game.players.forEach((p) => {
-    playerByName[p.name] = p;
-  });
   return (
     <table cellSpacing={0} cellPadding={0} className={styles.board}>
       <tbody>
@@ -27,28 +23,19 @@ export default function GameGrid({
               const index = row * size + col;
               const letter = state.letters[index];
               const owner = state.owners[index];
+              const hot = state.hot[index];
               const bonus = game.board.base[index];
 
               return (
                 <td key={col}>
-                  <GasOverlay
-                    type={
-                      state.squaresWithGas.includes(index)
-                        ? "gas"
-                        : state.squaresGoingToHaveGas.includes(index)
-                        ? "danger"
-                        : "none"
-                    }
-                  />
+                  <GasOverlay state={hot} />
                   {letter ? (
                     <LetterCell
                       letter={letter}
-                      owner={owner && playerByName[owner]}
-                      isSelected={
-                        owner
-                          ? selectedPlayer === playerByName[owner].index
-                          : false
+                      owner={
+                        owner !== undefined ? game.players[owner] : undefined
                       }
+                      isSelected={selectedPlayer === owner}
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />
@@ -66,10 +53,10 @@ export default function GameGrid({
 }
 
 interface GasOverlayProps {
-  type: "gas" | "danger" | "none";
+  state: HotZone | void;
 }
-function GasOverlay({ type }: GasOverlayProps): JSX.Element | null {
-  return type === "none" ? null : <div className={styles[type]}></div>;
+function GasOverlay({ state }: GasOverlayProps): JSX.Element | null {
+  return state ? <div className={styles[state]}></div> : null;
 }
 function EmptyCell() {
   return <div className={styles.empty} />;
@@ -94,7 +81,7 @@ const ownerColours = {
 } as const;
 interface LetterProps {
   letter: Letter;
-  owner: PlayerDetails | null;
+  owner: PlayerDetails | void;
   isSelected?: boolean;
 }
 export function LetterCell({

@@ -44,7 +44,7 @@
   line-height: 25px;
 }
 
-.gas {
+.hot {
   position: absolute;
   width: 25px;
   height: 25px;
@@ -62,8 +62,8 @@
   );
 }
 
-.danger {
-  composes: gas;
+.warm {
+  composes: hot;
   background-image: linear-gradient(
     135deg,
     #999 25%,

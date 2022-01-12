@@ -16,6 +16,12 @@ export type Events = {
       itemOnSquare: Bonus;
     }>;
   };
+  EndDropPhase: {
+    startingPosition: {
+      x: number;
+      y: number;
+    };
+  };
   SyncNewBoardState: {
     squaresWithLetters: Array<{
       index: number;
@@ -44,10 +50,10 @@ export type Events = {
     placement: number;
   };
   CloseCircleChunk: {
-    indexesToClose: Array<number>
+    indexesToClose: Array<number>;
   };
   CloseCircle: {
-    indexesToClose: Array<number>
+    indexesToClose: Array<number>;
   };
 };
 
@@ -60,6 +66,8 @@ interface SocketID$ extends String {
   isSocketID: true;
 }
 export type SocketID = SocketID$ & string;
+
+export type HotZone = "hot" | "warm";
 
 export type PlayerIndex =
   | 0
@@ -127,18 +135,19 @@ export type Bonus =
   | "medkit"
   | "letter_s";
 
+type SparseArray<T> = Array<T | void>;
+
 export type Game = {
   id: number;
   golden: boolean;
   players: Array<PlayerDetails>;
   board: {
     size: number;
-    base: Array<Bonus | null>;
+    base: SparseArray<Bonus>;
     timeline: Array<{
-      letters: Array<Letter | null>;
-      owners: Array<PlayerName | null>;
-      squaresWithGas: Array<number>;
-      squaresGoingToHaveGas: Array<number>;
+      letters: SparseArray<Letter>;
+      owners: SparseArray<PlayerIndex>;
+      hot: SparseArray<HotZone>;
     }>;
   };
   kills: Array<Kill>;
