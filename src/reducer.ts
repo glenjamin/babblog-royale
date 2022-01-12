@@ -35,7 +35,7 @@ const handlers: Handlers = {
   importGames(state, { games }) {
     return update(state, {
       games,
-      gameIndex: games.length > 0 ? 0 : -1,
+      gameIndex: games.length - 1,
       gameStep: 0,
       showImportDialog: false,
     });
