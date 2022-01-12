@@ -44,3 +44,35 @@
   color: #eee;
   line-height: 25px;
 }
+
+.gas {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  opacity: 0.2;
+  background-size: 12px 12px;
+  background-image: linear-gradient(
+    135deg,
+    #c00 25%,
+    transparent 25%,
+    transparent 50%,
+    #c00 50%,
+    #c00 75%,
+    transparent 75%,
+    transparent 100%
+  );
+}
+
+.danger {
+  composes: gas;
+  background-image: linear-gradient(
+    135deg,
+    #999 25%,
+    transparent 25%,
+    transparent 50%,
+    #999 50%,
+    #999 75%,
+    transparent 75%,
+    transparent 100%
+  );
+}

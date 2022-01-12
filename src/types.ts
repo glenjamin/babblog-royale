@@ -43,6 +43,12 @@ export type Events = {
     oldMMR: number;
     placement: number;
   };
+  CloseCircleChunk: {
+    indexesToClose: Array<number>
+  };
+  CloseCircle: {
+    indexesToClose: Array<number>
+  };
 };
 
 interface PlayerName$ extends String {
@@ -131,6 +137,8 @@ export type Game = {
     timeline: Array<{
       letters: Array<Letter | null>;
       owners: Array<PlayerName | null>;
+      squaresWithGas: Array<number>;
+      squaresGoingToHaveGas: Array<number>;
     }>;
   };
   kills: Array<Kill>;
