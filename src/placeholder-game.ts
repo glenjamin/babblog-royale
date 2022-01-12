@@ -42,6 +42,7 @@ const placeholderGame: Game = {
   kills: [],
   winner: null,
   you: {
+    name: "JohnL" as PlayerName,
     MMR: 0,
     oldMMR: 0,
     position: 0,

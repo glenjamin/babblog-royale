@@ -18,6 +18,7 @@ The underlying log parser currently handles:
 - Game winner (if you stayed to the end)
 - Your MMR change and position
 - Each board state
+- Which player is player 1
 - The hot zone contracting
 
 ## Roadmap
@@ -25,12 +26,10 @@ The underlying log parser currently handles:
 - Add global hotkeys for scrolling game state
 - Show kills and wins on the UI
 - Show the scoreboard progress on the UI
-- Figure out which player is the current player and make them always blue
 - Include player tiles / HP
 - Keep track of when items get collected
 - Show the scoreboard progress on the UI
 - Show phantom tiles
-- Figure out which player is the current player and make them always blue
 - Figure out which words/bombs people played
 - Allow export/import of individual parsed games
 - Allow sharing links to games

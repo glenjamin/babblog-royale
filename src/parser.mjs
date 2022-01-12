@@ -7,17 +7,26 @@ const HOT_ZONE = "the hot zone";
 
 export function newParser() {
   /**
-   * @type {Game}
-   */
-  let game;
-
-  /**
    * @type {Array<typeof game>}
    */
   const games = [];
 
   /**
-   *  @type {Array<"hot" | "warm">}
+   * @type {Game}
+   */
+  let game;
+
+  /**
+   * Keep track of the starting position,
+   * so we can figure out who the player is from the first board sync
+   *
+   * @type {number | undefined}
+   */
+  let startIndex;
+
+  /**
+   * We'll keep copying this array into each timeline step
+   * @type {Array<"hot" | "warm">}
    */
   let hot = [];
 
@@ -33,14 +42,13 @@ export function newParser() {
       squaresWithMults,
       squaresWithItems,
     }) {
+      hot = [];
+      startIndex = undefined;
+
       game = {
         id: room,
         golden: goldenRoyale,
-        players: playerList.map(({ name, socketID }, index) => ({
-          socketID,
-          name,
-          index: playerIndex(index),
-        })),
+        players: indexPlayers(playerList),
         board: {
           size: gridWidth,
           base: Array(gridWidth * gridWidth),
@@ -49,13 +57,12 @@ export function newParser() {
         kills: [],
         winner: null,
         you: {
+          name: /** @type {import("./types").PlayerName} */ (""),
           MMR: 0,
           oldMMR: 0,
           position: 0,
         },
       };
-
-      hot = [];
 
       squaresWithMults.forEach(({ index, wordScoreMult }) => {
         game.board.base[index] = wordScoreMult === 2 ? "2x_word" : "3x_word";
@@ -70,12 +77,18 @@ export function newParser() {
     /**
      * @param {Events['EndDropPhase']} payload
      */
-    EndDropPhase({ startingPosition: { x, y } }) {},
+    EndDropPhase({ startingPosition: { x, y } }) {
+      startIndex = game.board.size * y + x;
+    },
 
     /**
      * @param {Events['SyncNewBoardState']} payload
      */
     SyncNewBoardState({ squaresWithLetters }) {
+      if (startIndex && game.you.name === "") {
+        identifyPlayerOne(squaresWithLetters);
+      }
+
       /**
        * @type {Game['board']['timeline'][0]}
        */
@@ -121,6 +134,7 @@ export function newParser() {
      */
     FinalItemsAndMMR({ newMMR, oldMMR, placement }) {
       game.you = {
+        name: game.you.name,
         MMR: newMMR,
         oldMMR,
         position: placement,
@@ -147,6 +161,27 @@ export function newParser() {
       });
     },
   };
+
+  /**
+   * @param {Events['SyncNewBoardState']['squaresWithLetters']} squares
+   */
+  function identifyPlayerOne(squares) {
+    const square = squares.find(({ index }) => index === startIndex);
+    if (!square?.playerLivingOn) {
+      game.you.name = /** @type {import("./types").PlayerName} */ ("uknnown");
+      return;
+    }
+    /** @type {import("./types").PlayerDetails[]} */
+    const newPlayers = [];
+    game.players.forEach((player) => {
+      if (player.socketID === square.playerLivingOn) {
+        newPlayers.unshift(player);
+      } else {
+        newPlayers.push(player);
+      }
+    });
+    game.players = indexPlayers(newPlayers);
+  }
 
   let buffer = "";
   /**
@@ -181,6 +216,17 @@ export function newParser() {
       return games;
     },
   };
+}
+
+/**
+ * @param {Omit<import("./types").PlayerDetails, "index">[]} players
+ */
+function indexPlayers(players) {
+  return players.map(({ name, socketID }, index) => ({
+    socketID,
+    name,
+    index: playerIndex(index),
+  }));
 }
 
 /**

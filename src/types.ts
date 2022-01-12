@@ -153,6 +153,7 @@ export type Game = {
   kills: Array<Kill>;
   winner: PlayerName | null;
   you: {
+    name: PlayerName;
     MMR: number;
     oldMMR: number;
     position: number;
