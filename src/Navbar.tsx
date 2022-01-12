@@ -53,10 +53,17 @@ function AppNavbar(props: AppNavbarProps): JSX.Element {
           </Form>
         </Navbar.Collapse>
         <Navbar.Collapse className="justify-content-end">
-          <Navbar.Text>
-            Created by Glenjamin on{" "}
-            <a href="https://github.com/glenjamin/babblog-royale/">GitHub</a>
-          </Navbar.Text>
+          <Stack>
+            <Navbar.Text className="p-0 text-end">
+              Created by Glenjamin on{" "}
+              <a href="https://github.com/glenjamin/babblog-royale/">GitHub</a>
+              <br />
+              for{" "}
+              <a href="https://store.steampowered.com/app/1759440/Babble_Royale/">
+                Babble Royale
+              </a>
+            </Navbar.Text>
+          </Stack>
         </Navbar.Collapse>
       </Container>
     </Navbar>

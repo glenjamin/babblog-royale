@@ -1,6 +1,6 @@
 # babblog-royale
 
-Babble Royale log parser and viewer
+[Babble Royale](https://store.steampowered.com/app/1759440/Babble_Royale/) log parser and viewer
 
 [Open the Web App](https://babblog-royale.netlify.app/)
 
