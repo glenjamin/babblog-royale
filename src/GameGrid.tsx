@@ -23,28 +23,54 @@ export default function GameGrid({ game, step }: GameGridProps) {
                 const index = row * size + col;
                 const letter = state.letters[index];
                 const owner = state.owners[index];
+                let gas = "none";
+                if(state.squaresWithGas.includes(index)) {
+                  gas = "gas";
+                } else if (state.squaresGoingToHaveGas.includes(index)) {
+                  gas = "danger";
+                }
+                const gasOverlayElement = GasOverlay(gas);
                 if (letter) {
-                  return (
+                  return [gasOverlayElement, 
                     <LetterCell
                       letter={letter}
                       owner={owner && playerByName[owner]}
-                    />
-                  );
+                    />];
                 }
                 const bonus = game.board.base[index];
                 if (bonus) {
-                  return <BonusCell bonus={bonus} />;
+                  return [gasOverlayElement, <BonusCell bonus={bonus} />];
                 }
-                return <EmptyCell />;
+                return [gasOverlayElement,<EmptyCell />];
               })
-              .map((cell, col) => (
-                <td key={col}>{cell}</td>
+              .map((elements, col) => (
+                <td key={col}>{elements}</td>
               ))}
           </tr>
         ))}
       </tbody>
     </table>
   );
+}
+function GasOverlay(type: string): JSX.Element | null {
+  if(type === "gas") {
+    return (
+      <div
+        className = {styles.gas}
+      ></div>
+    );
+  }
+
+  if(type === "danger") {
+    return (
+      <div
+        className = {styles.danger}
+      ></div>
+    );
+  }
+
+  return null;
+  
 }
 function EmptyCell() {
   return <div className={styles.empty} />;

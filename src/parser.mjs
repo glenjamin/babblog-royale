@@ -16,6 +16,16 @@ export function newParser() {
    */
   const games = [];
 
+  /**
+   *  @type {Array<number>}
+   */
+  let squaresWithGas = [];
+
+  /**
+   *  @type {Array<number>}
+   */
+   let squaresGoingToHaveGas = [];
+  
   const handlers = {
     /**
      * @param {Events['Joined']} payload
@@ -50,6 +60,9 @@ export function newParser() {
         },
       };
 
+      squaresWithGas = [];
+      squaresGoingToHaveGas = [];
+
       squaresWithMults.forEach(({ index, wordScoreMult }) => {
         game.board.base[index] = wordScoreMult === 2 ? "2x_word" : "3x_word";
       });
@@ -70,6 +83,8 @@ export function newParser() {
       const state = {
         letters: Array(game.board.size * game.board.size),
         owners: Array(game.board.size * game.board.size),
+        squaresWithGas: squaresWithGas,
+        squaresGoingToHaveGas: squaresGoingToHaveGas,
       };
 
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
@@ -113,6 +128,21 @@ export function newParser() {
         position: placement,
       };
     },
+
+    /**
+     * @param {Events['CloseCircleChunk']} payload
+     */
+    CloseCircleChunk({ indexesToClose }) {
+      squaresWithGas = squaresWithGas.concat(indexesToClose);
+    },
+
+    /**
+     * @param {Events['CloseCircle']} payload
+     */
+     CloseCircle({ indexesToClose }) {
+      squaresGoingToHaveGas = squaresGoingToHaveGas.concat(indexesToClose);
+    },
+    
   };
 
   let buffer = "";

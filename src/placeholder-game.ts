@@ -37,7 +37,7 @@ const placeholderGame: Game = {
   board: {
     size: 31,
     base: [],
-    timeline: [{ letters: [], owners: [] }],
+    timeline: [{ letters: [], owners: [], squaresWithGas: [], squaresGoingToHaveGas: [] }],
   },
   kills: [],
   winner: null,
