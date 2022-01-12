@@ -21,12 +21,14 @@ The underlying log parser currently handles:
 
 ## Roadmap
 
-- Keep track of when items get collected
+- Add global hotkeys for scrolling game state
 - Show kills and wins on the UI
-- Show the scoreboard progress on the UI
 - Include the hot zone
-- Figure out which player is the current player and make them always blue
 - Include player tiles / HP
+- Keep track of when items get collected
+- Show the scoreboard progress on the UI
+- Show phantom tiles
+- Figure out which player is the current player and make them always blue
 - Figure out which words/bombs people played
 - Allow export/import of individual parsed games
 - Allow sharing links to games
