@@ -13,12 +13,12 @@ import icon from "./icon.png";
 interface AppNavbarProps {
   showImport: () => void;
   games: Game[];
-  activeGameIndex: number;
-  chooseGame: (index: number) => void;
+  activeGameID: number;
+  chooseGame: (id: number) => void;
 }
 
 function AppNavbar(props: AppNavbarProps): JSX.Element {
-  const { showImport, games, activeGameIndex, chooseGame } = props;
+  const { showImport, games, activeGameID, chooseGame } = props;
   return (
     <Navbar bg="light" expand="md">
       <Container fluid>
@@ -45,7 +45,7 @@ function AppNavbar(props: AppNavbarProps): JSX.Element {
               {games.length > 0 && (
                 <GamePicker
                   games={games}
-                  index={activeGameIndex}
+                  activeID={activeGameID}
                   onPick={chooseGame}
                 />
               )}

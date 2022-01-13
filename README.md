@@ -23,7 +23,6 @@ The underlying log parser currently handles:
 
 ## Roadmap
 
-- Add global hotkeys for scrolling game state
 - Show kills and wins on the UI
 - Show the scoreboard progress on the UI
 - Include player tiles / HP
@@ -31,6 +30,7 @@ The underlying log parser currently handles:
 - Show the scoreboard progress on the UI
 - Show phantom tiles
 - Figure out which words/bombs people played
+- Make the placeholder game have more than one step - perhaps it could be help text?
 - Allow export/import of individual parsed games
 - Allow sharing links to games
 

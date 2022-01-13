@@ -5,22 +5,23 @@ import Stack from "react-bootstrap/Stack";
 
 import Navbar from "./Navbar";
 import Importer from "./Importer";
+import Hotkeys from "./Hotkeys";
 import GameGrid from "./GameGrid";
-
 import PlayerList from "./PlayerList";
 import GameStepper from "./GameStepper";
-
-import placeholderGame from "./placeholder-game";
 
 import useAppReducer from "./reducer";
 
 function App() {
   const [state, actions] = useAppReducer();
-  const { games, gameIndex, gameStep, selectedPlayer, showImportDialog } =
-    state;
-
-  const game = games[gameIndex] || placeholderGame;
-  const maxStep = game.board.timeline.length - 1;
+  const {
+    games,
+    game,
+    gameStep,
+    selectedPlayer,
+    showImportDialog,
+    showHotkeyHelp,
+  } = state;
 
   return (
     <>
@@ -33,8 +34,9 @@ function App() {
         showImport={actions.showImport}
         chooseGame={actions.chooseGame}
         games={games}
-        activeGameIndex={gameIndex}
+        activeGameID={game.id}
       />
+      <Hotkeys showHelp={showHotkeyHelp} {...actions} />
       <Container fluid>
         <Row>
           <Col>
@@ -49,7 +51,7 @@ function App() {
             <Stack>
               <GameStepper
                 step={gameStep}
-                max={maxStep}
+                max={game.board.timeline.length - 1}
                 stepTo={actions.chooseStep}
                 stepBack={actions.stepBack}
                 stepForwards={actions.stepForwards}
