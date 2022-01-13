@@ -1,20 +1,20 @@
 import Form from "react-bootstrap/Form";
+
 import { Game } from "./types";
 
 interface GamePickerProps {
   games: Game[];
-  index: number;
-  onPick: (index: number) => void;
+  activeID: number;
+  onPick: (activeID: number) => void;
 }
 
-function GamePicker({ games, index, onPick }: GamePickerProps): JSX.Element {
+function GamePicker({ games, activeID, onPick }: GamePickerProps): JSX.Element {
   return (
     <Form.Select
       autoFocus
-      value={String(index)}
+      value={String(activeID)}
       onChange={(e) => onPick(Number(e.target.value))}
     >
-      <option value="-1">Select a game</option>
       {games.map((game, index) => {
         const {
           id,
@@ -22,7 +22,7 @@ function GamePicker({ games, index, onPick }: GamePickerProps): JSX.Element {
         } = game;
         const delta = Math.round(MMR - oldMMR);
         return (
-          <option key={index} value={String(index)}>
+          <option key={index} value={String(game.id)}>
             Game #{id}: Position {position} to MRR {Math.round(MMR)} (
             {delta >= 0 && "+"}
             {delta})

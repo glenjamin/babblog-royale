@@ -1,27 +1,32 @@
 import { useMemo, useReducer } from "react";
+import placeholderGame from "./placeholder-game";
 import { Game } from "./types";
 
 type State = {
   games: Game[];
-  gameIndex: number; // index into games
+  game: Game;
   gameStep: number; // index into game timeline
-  showImportDialog: boolean;
   selectedPlayer: number | null; // index into players
+  showImportDialog: boolean;
+  showHotkeyHelp: boolean;
 };
 
 const initialState: State = {
   games: [],
-  gameIndex: -1,
+  game: placeholderGame,
   gameStep: 0,
-  showImportDialog: false,
   selectedPlayer: null,
+  showImportDialog: false,
+  showHotkeyHelp: false,
 };
 
 const creators = {
   showImport: () => {},
   cancelImport: () => {},
+  toggleHotkeyHelp: () => {},
+  hideHotkeyHelp: () => {},
   importGames: (games: Game[]) => ({ games }),
-  chooseGame: (index: number) => ({ index }),
+  chooseGame: (id: number) => ({ id }),
   chooseStep: (step: number) => ({ step }),
   stepBack: () => {},
   stepForwards: () => {},
@@ -35,26 +40,32 @@ const handlers: Handlers = {
   cancelImport(state) {
     return update(state, { showImportDialog: false });
   },
+  toggleHotkeyHelp(state) {
+    return update(state, { showHotkeyHelp: !state.showHotkeyHelp });
+  },
+  hideHotkeyHelp(state) {
+    return update(state, { showHotkeyHelp: false });
+  },
   importGames(state, { games }) {
     return update(state, {
       games,
-      gameIndex: games.length - 1,
+      game: games[games.length - 1] || placeholderGame,
       gameStep: 0,
       showImportDialog: false,
       selectedPlayer: null,
     });
   },
-  chooseGame(state, { index }) {
+  chooseGame(state, { id }) {
     return update(state, {
-      gameIndex: index,
+      game: state.games.find((g) => g.id === id) || placeholderGame,
       gameStep: 0,
       selectedPlayer: null,
     });
   },
   chooseStep(state, { step }) {
-    const { gameIndex, games } = state;
+    const { game } = state;
     if (step < 0) step = 0;
-    const max = games[gameIndex].board.timeline.length;
+    const max = game.board.timeline.length - 1;
     if (step >= max) step = max;
     return update(state, { gameStep: step });
   },
