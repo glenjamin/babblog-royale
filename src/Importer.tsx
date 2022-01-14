@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -6,6 +6,8 @@ import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import ProgressBar from "react-bootstrap/ProgressBar";
+
+import * as zip from "@zip.js/zip.js";
 
 import { Game } from "./types";
 import { newParser } from "./parser.mjs";
@@ -16,62 +18,54 @@ interface ImportProps {
   onClose(): void;
 }
 
-function useThrottle<Args extends any[]>(
-  fn: (...args: Args) => void,
-  limit: number
-): (...args: Args) => void {
-  const last = useRef(0);
-  return useCallback(
-    (...args) => {
-      const now = Date.now();
-      if (now - last.current > limit) {
-        last.current = now;
-        fn(...args);
-      }
-    },
-    [fn, limit]
-  );
-}
-
 function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
-  const [fileSize, setFileSize] = useState(0);
-  const [progress, rawSetProgress] = useState(0);
-  const setProgress = useThrottle(rawSetProgress, 100);
-  const [error, setError] = useState<string>();
+  const [{ loading, error }, setState] = useState<{
+    loading?: true;
+    error?: string;
+  }>({});
+  const setLoading = useCallback(
+    (loading: boolean) => setState(loading ? { loading } : {}),
+    [setState]
+  );
+  const setError = useCallback(
+    (error: string) => setState({ error }),
+    [setState]
+  );
 
-  async function parseFile(file: Blob) {
-    setError(undefined);
-    setFileSize(file.size);
-    rawSetProgress(0);
+  async function parseFile(file: File) {
+    setLoading(true);
+
+    let blob: Blob = file;
+    if (file.name.endsWith(".zip")) {
+      const reader = new zip.ZipReader(new zip.BlobReader(blob));
+      const entries = await reader.getEntries();
+      if (entries.length !== 1) {
+        return setError("Zip files should contain only one log file.");
+      }
+      blob = await entries[0].getData!(new zip.BlobWriter());
+    }
 
     const parser = newParser();
     // The type cast is required because @types/node messes with the DOM type
     // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
-    const stream = file.stream() as any as ReadableStream<Uint8Array>;
+    const stream = blob.stream() as any as ReadableStream<Uint8Array>;
     const reader = stream.getReader();
     const utf8Decoder = new TextDecoder("utf-8");
-    let handled = 0;
     while (true) {
       let { value, done } = await reader.read();
-      handled += value?.length || 0;
       const chunk = utf8Decoder.decode(value, { stream: !done });
       parser.parse(chunk);
-      setProgress(handled);
       if (done) break;
     }
-    rawSetProgress(file.size);
     parser.end();
-
-    setFileSize(0);
-    rawSetProgress(0);
 
     const games = parser.games();
     if (games.length === 0) {
-      setError("No games found in log file. Try another file.");
-      return;
+      return setError("No games found in log file. Try another file.");
     }
 
     setTimeout(() => {
+      setLoading(false);
       onImport(games);
     }, 500);
   }
@@ -92,7 +86,7 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
               <Form.Control
                 type="file"
                 aria-describedby="logFileHelp"
-                accept=".log"
+                accept=".log,.zip"
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   parseFile(e.target.files?.[0]!)
                 }
@@ -119,6 +113,11 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
                 .
               </p>
               <p>
+                If you want to keep a lot of files and save some space, you can
+                compress them into <code>.zip</code> files, each containing a
+                single log - and these will also be accepted.
+              </p>
+              <p>
                 The file will not be uploaded to any server, all processing
                 takes place inside your web browser.
               </p>
@@ -126,17 +125,7 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
             <Form.Text></Form.Text>
           </Form.Group>
         </Form>
-        {fileSize > 0 && (
-          <>
-            <p>Loading file&hellip;</p>
-            <ProgressBar
-              animated
-              label={`${fileSize}/${progress}B`}
-              max={fileSize}
-              now={progress}
-            />
-          </>
-        )}
+        {loading && <ProgressBar animated label="Loading..." now={100} />}
       </Modal.Body>
 
       <Modal.Footer>
