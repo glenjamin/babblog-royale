@@ -1,39 +1,91 @@
+import {
+  Bonus,
+  Game,
+  Letter,
+  PlayerDetails,
+  PlayerIndex,
+  PlayerName,
+  SocketID,
+} from "./types";
+
 const HOT_ZONE = "the hot zone";
 
-/**
- * @typedef { import("./types").Game } Game
- * @typedef { import("./types").Events } Events
- */
+export type Events = {
+  Joined: {
+    room: number;
+    goldenRoyale: boolean;
+    gridWidth: number;
+    playerList: Array<{
+      name: PlayerName;
+      socketID: SocketID;
+    }>;
+    squaresWithMults: Array<{
+      index: number;
+      wordScoreMult: 2 | 3;
+    }>;
+    squaresWithItems: Array<{
+      index: number;
+      itemOnSquare: Bonus;
+    }>;
+  };
+  EndDropPhase: {
+    startingPosition: {
+      x: number;
+      y: number;
+    };
+  };
+  SyncNewBoardState: {
+    squaresWithLetters: Array<{
+      index: number;
+      letter: Letter;
+      playerLivingOn: SocketID | null;
+    }>;
+    playerScores: Array<{
+      socketID: SocketID;
+      /**
+       * -7347 is a magic number meaning dead
+       */
+      score: number;
+    }>;
+  };
+  NewPlayerDeath: {
+    playerName: PlayerName;
+    playerKilledBy: PlayerName;
+    killedByWord: string;
+  };
+  EndGame: {
+    winnerIndex: number;
+  };
+  FinalItemsAndMMR: {
+    newMMR: number;
+    oldMMR: number;
+    placement: number;
+  };
+  CloseCircleChunk: {
+    indexesToClose: Array<number>;
+  };
+  CloseCircle: {
+    indexesToClose: Array<number>;
+  };
+};
 
 export function newParser() {
-  /**
-   * @type {Array<typeof game>}
-   */
-  const games = [];
+  const games: Array<typeof game> = [];
 
-  /**
-   * @type {Game}
-   */
-  let game;
+  let game: Game;
 
   /**
    * Keep track of the starting position,
    * so we can figure out who the player is from the first board sync
-   *
-   * @type {number | undefined}
    */
-  let startIndex;
+  let startIndex: number | undefined;
 
   /**
    * We'll keep copying this array into each timeline step
-   * @type {Array<"hot" | "warm">}
    */
-  let hot = [];
+  let hot: Array<"hot" | "warm"> = [];
 
   const handlers = {
-    /**
-     * @param {Events['Joined']} payload
-     */
     Joined({
       room,
       goldenRoyale,
@@ -41,7 +93,7 @@ export function newParser() {
       playerList,
       squaresWithMults,
       squaresWithItems,
-    }) {
+    }: Events["Joined"]) {
       hot = [];
       startIndex = undefined;
 
@@ -57,7 +109,7 @@ export function newParser() {
         kills: [],
         winner: null,
         you: {
-          name: /** @type {import("./types").PlayerName} */ (""),
+          name: "" as PlayerName,
           MMR: 0,
           oldMMR: 0,
           position: 0,
@@ -74,25 +126,16 @@ export function newParser() {
       games.push(game);
     },
 
-    /**
-     * @param {Events['EndDropPhase']} payload
-     */
-    EndDropPhase({ startingPosition: { x, y } }) {
+    EndDropPhase({ startingPosition: { x, y } }: Events["EndDropPhase"]) {
       startIndex = game.board.size * y + x;
     },
 
-    /**
-     * @param {Events['SyncNewBoardState']} payload
-     */
-    SyncNewBoardState({ squaresWithLetters }) {
+    SyncNewBoardState({ squaresWithLetters }: Events["SyncNewBoardState"]) {
       if (startIndex && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
       }
 
-      /**
-       * @type {Game['board']['timeline'][0]}
-       */
-      const state = {
+      const state: Game["board"]["timeline"][0] = {
         letters: [],
         owners: [],
         hot,
@@ -111,10 +154,11 @@ export function newParser() {
       game.board.timeline.push(state);
     },
 
-    /**
-     * @param {Events['NewPlayerDeath']} payload
-     */
-    NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {
+    NewPlayerDeath({
+      playerName: player,
+      playerKilledBy: by,
+      killedByWord,
+    }: Events["NewPlayerDeath"]) {
       if (by === HOT_ZONE) {
         game.kills.push({ type: "hot", player });
       } else {
@@ -122,17 +166,15 @@ export function newParser() {
       }
     },
 
-    /**
-     * @param {Events['EndGame']} payload
-     */
-    EndGame({ winnerIndex }) {
+    EndGame({ winnerIndex }: Events["EndGame"]) {
       game.winner = game.players[winnerIndex].name;
     },
 
-    /**
-     * @param {Events['FinalItemsAndMMR']} payload
-     */
-    FinalItemsAndMMR({ newMMR, oldMMR, placement }) {
+    FinalItemsAndMMR({
+      newMMR,
+      oldMMR,
+      placement,
+    }: Events["FinalItemsAndMMR"]) {
       game.you = {
         name: game.you.name,
         MMR: newMMR,
@@ -141,20 +183,14 @@ export function newParser() {
       };
     },
 
-    /**
-     * @param {Events['CloseCircleChunk']} payload
-     */
-    CloseCircleChunk({ indexesToClose }) {
+    CloseCircleChunk({ indexesToClose }: Events["CloseCircleChunk"]) {
       hot = hot.slice();
       indexesToClose.forEach((i) => {
         hot[i] = "hot";
       });
     },
 
-    /**
-     * @param {Events['CloseCircle']} payload
-     */
-    CloseCircle({ indexesToClose }) {
+    CloseCircle({ indexesToClose }: Events["CloseCircle"]) {
       hot = hot.slice();
       indexesToClose.forEach((i) => {
         if (!hot[i]) hot[i] = "warm";
@@ -162,17 +198,16 @@ export function newParser() {
     },
   };
 
-  /**
-   * @param {Events['SyncNewBoardState']['squaresWithLetters']} squares
-   */
-  function identifyPlayerOne(squares) {
+  function identifyPlayerOne(
+    squares: Events["SyncNewBoardState"]["squaresWithLetters"]
+  ) {
     const square = squares.find(({ index }) => index === startIndex);
     if (!square?.playerLivingOn) {
-      game.you.name = /** @type {import("./types").PlayerName} */ ("uknnown");
+      game.you.name = "unknown" as PlayerName;
       return;
     }
-    /** @type {import("./types").PlayerDetails[]} */
-    const newPlayers = [];
+
+    const newPlayers: PlayerDetails[] = [];
     game.players.forEach((player) => {
       if (player.socketID === square.playerLivingOn) {
         newPlayers.unshift(player);
@@ -181,27 +216,19 @@ export function newParser() {
       }
     });
     game.players = indexPlayers(newPlayers);
+    game.you.name = game.players[0].name;
   }
 
   let buffer = "";
-  /**
-   * @param {string} line
-   */
-  function handleLine(line) {
+  function handleLine(line: string) {
     if (line[0] !== "[" || line[1] !== '"') return;
-    /**
-     * @type [keyof Events, any]
-     */
-    const [event, payload] = JSON.parse(line);
+    const [event, payload]: [keyof Events, any] = JSON.parse(line);
     const handler = handlers[event];
     if (handler) handler(payload);
   }
 
   return {
-    /**
-     * @param {string} chunk
-     */
-    parse(chunk) {
+    parse(chunk: string) {
       buffer += chunk;
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || "";
@@ -218,10 +245,7 @@ export function newParser() {
   };
 }
 
-/**
- * @param {Omit<import("./types").PlayerDetails, "index">[]} players
- */
-function indexPlayers(players) {
+function indexPlayers(players: Omit<PlayerDetails, "index">[]) {
   return players.map(({ name, socketID }, index) => ({
     socketID,
     name,
@@ -229,13 +253,9 @@ function indexPlayers(players) {
   }));
 }
 
-/**
- * @param {number} i
- * @returns {import("./types").PlayerIndex}
- */
-function playerIndex(i) {
+function playerIndex(i: number): PlayerIndex {
   if (i < 0 || i > 15) {
     throw new Error("invalid player index");
   }
-  return /** @type {any} */ (i);
+  return i as any;
 }

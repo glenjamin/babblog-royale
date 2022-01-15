@@ -1,5 +1,12 @@
-import fs from "fs";
-import { newParser } from "./src/parser.mjs";
+const fs = require("fs");
+
+process.env.BABEL_ENV ??= "test";
+require("@babel/register")({
+  presets: ["react-app"],
+  extensions: [".ts"],
+});
+
+const { newParser } = require("./src/parser");
 
 const filename = process.argv[2];
 if (!filename) {

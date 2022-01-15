@@ -10,7 +10,7 @@ import ProgressBar from "react-bootstrap/ProgressBar";
 import * as zip from "@zip.js/zip.js";
 
 import { Game } from "./types";
-import { newParser } from "./parser.mjs";
+import { newParser } from "./parser";
 
 interface ImportProps {
   show: boolean;

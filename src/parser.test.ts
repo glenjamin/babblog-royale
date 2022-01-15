@@ -1,8 +1,8 @@
 import path from "path";
 import { createReadStream } from "fs";
 
-import { newParser } from "./parser.mjs";
-import { Game } from "./types.js";
+import { newParser } from "./parser";
+import { Game } from "./types";
 
 async function parseSample(name: string): Promise<Game[]> {
   const parser = newParser();
@@ -21,8 +21,19 @@ async function parseSample(name: string): Promise<Game[]> {
 }
 
 describe("Parsing", () => {
-  it("should parse something", async () => {
-    const games = await parseSample("died-to-hot-zone");
-    console.log(games);
+  describe("died to the hot zone", () => {
+    let games: Game[];
+    let game: Game;
+    beforeAll(async () => {
+      games = await parseSample("died-to-hot-zone");
+      [game] = games;
+    });
+    it("should parse one game", () => {
+      expect(games).toHaveLength(1);
+    });
+    it("should detect the player", () => {
+      // console.dir(game);
+      expect(game).toHaveProperty("you.name", "Glenjamin");
+    });
   });
 });
