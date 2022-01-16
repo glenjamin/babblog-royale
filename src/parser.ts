@@ -205,13 +205,12 @@ export function newParser() {
     },
 
     UseBomb({ indexesToRemove }) {
-      const last = game.timeline[game.timeline.length - 1];
-      const letters = last.letters.slice();
+      const letters = game.timeline[game.timeline.length - 1].letters.slice();
       indexesToRemove.forEach((i) => {
         delete letters[i];
       });
 
-      addGameStep({ letters, owners: last.owners });
+      addGameStep({ letters });
     },
 
     NewTilePacket({ newTilePacket }) {
@@ -219,6 +218,7 @@ export function newParser() {
         ...player,
         letters: newTilePacket.map((t) => t.letter),
       };
+      addGameStep({});
     },
 
     UpdateCurrentTilePacket({ tiles, scoringEvents, playerDied }) {
@@ -234,8 +234,8 @@ export function newParser() {
           .map(({ label }) => label)
           .filter((word) => !word.includes(" "));
       }
-      if (tiles.length === 0 && !scoringEvents) {
-        // This is an overload, so merged it with the bomb we've just applied
+      if (tiles.length === 0 && !scoringEvents && !playerDied) {
+        // This is an overload, so merge it with the bomb we've just applied
         // instead of waiting for the next board sync to apply it
         // This is based on an assumption that there won't be any other board
         // events in between the UseBomb and this event for an overload
@@ -298,8 +298,15 @@ export function newParser() {
     },
   };
 
-  function addGameStep(step: Pick<GameStep, "letters" | "owners">) {
-    game.timeline.push({ ...step, player, hot });
+  function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
+    const last = game.timeline[game.timeline.length - 1];
+    game.timeline.push({
+      ...{ letters: [], owners: [] },
+      ...last,
+      player,
+      hot,
+      ...step,
+    });
 
     // Only use player.words once
     if (player.words.length) {
