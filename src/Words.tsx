@@ -31,9 +31,9 @@ function Words({ timeline, stepTo }: WordsProps): JSX.Element {
           >
             {i + 1}
           </Button>
-          {words.map((word) => (
+          {words.map((word, i) => (
             <a
-              key={word}
+              key={i}
               target="wordnik"
               href={"https://www.wordnik.com/words/" + word}
               className="px-1 link-dark"

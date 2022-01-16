@@ -17,7 +17,7 @@ function PlayerState({
           <LetterCell key={i} letter={letter} />
         ))}
         {new Array(rackSize - letters.length).fill(0).map((_, i) => (
-          <EmptyCell />
+          <EmptyCell key={i} />
         ))}
         <div className="ms-3">
           {hp > 0 ? (
