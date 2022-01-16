@@ -188,29 +188,30 @@ export function newParser() {
         identifyPlayerOne(squaresWithLetters);
       }
 
-      const state: GameStep = {
-        letters: [],
-        owners: [],
-        hot,
-        player,
-      };
-
-      // Only use player.words once
-      if (player.words.length) {
-        player = { ...player, words: [] };
-      }
+      const letters: GameStep["letters"] = [];
+      const owners: GameStep["owners"] = [];
 
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
-        state.letters[index] = letter;
+        letters[index] = letter;
         if (playerLivingOn) {
           const player = game.players.find(
             ({ socketID }) => socketID === playerLivingOn
           );
-          if (player) state.owners[index] = player.index;
+          if (player) owners[index] = player.index;
         }
       });
 
-      game.timeline.push(state);
+      addGameStep({ letters, owners });
+    },
+
+    UseBomb({ indexesToRemove }) {
+      const last = game.timeline[game.timeline.length - 1];
+      const letters = last.letters.slice();
+      indexesToRemove.forEach((i) => {
+        delete letters[i];
+      });
+
+      addGameStep({ letters, owners: last.owners });
     },
 
     NewTilePacket({ newTilePacket }) {
@@ -240,15 +241,6 @@ export function newParser() {
         // events in between the UseBomb and this event for an overload
         game.timeline[game.timeline.length - 1].player = player;
       }
-    },
-
-    UseBomb({ indexesToRemove }) {
-      const last = game.timeline[game.timeline.length - 1];
-      const letters = last.letters.slice();
-      indexesToRemove.forEach((i) => {
-        delete letters[i];
-      });
-      game.timeline.push({ ...last, letters });
     },
 
     UpdateCurrentItems() {},
@@ -305,6 +297,15 @@ export function newParser() {
       });
     },
   };
+
+  function addGameStep(step: Pick<GameStep, "letters" | "owners">) {
+    game.timeline.push({ ...step, player, hot });
+
+    // Only use player.words once
+    if (player.words.length) {
+      player = { ...player, words: [] };
+    }
+  }
 
   function identifyPlayerOne(
     squares: Events["SyncNewBoardState"]["squaresWithLetters"]
