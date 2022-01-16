@@ -213,12 +213,14 @@ export function newParser() {
       addGameStep({ letters });
     },
 
-    NewTilePacket({ newTilePacket }) {
+    NewTilePacket({ newTilePacket, newLetter }) {
       player = {
         ...player,
         letters: newTilePacket.map((t) => t.letter),
       };
-      addGameStep({});
+      if (newLetter) {
+        addGameStep({});
+      }
     },
 
     UpdateCurrentTilePacket({ tiles, scoringEvents, playerDied }) {
@@ -301,7 +303,6 @@ export function newParser() {
   function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
     const last = game.timeline[game.timeline.length - 1];
     game.timeline.push({
-      ...{ letters: [], owners: [] },
       ...last,
       player,
       hot,
