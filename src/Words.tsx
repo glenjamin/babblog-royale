@@ -1,3 +1,5 @@
+import React from "react";
+
 import Button from "react-bootstrap/Button";
 
 // This feels like a hack, but the CSS to make it relative seemed even more
@@ -51,4 +53,4 @@ function wordLength(a: string, b: string): number {
   return b.length - a.length;
 }
 
-export default Words;
+export default React.memo(Words);
