@@ -84,6 +84,12 @@ type Events = {
     levelStars: number;
     levelUpgs: Array<"letter_slot" | "timer_decrease" | "item_slot">;
   };
+  HPSync: {
+    playerHP: number;
+  };
+  ExitedGas: {
+    playerHP: number;
+  };
   NewPlayerDeath: {
     playerName: PlayerName;
     playerKilledBy: PlayerName;
@@ -129,10 +135,7 @@ export function newParser() {
   /**
    * We'll keep copying this into each timeline step
    */
-  let rack: {
-    letters: Array<Letter>;
-    max: number;
-  };
+  let player: GameStep["player"];
 
   const handlers: Handlers = {
     Joined({
@@ -144,7 +147,7 @@ export function newParser() {
       squaresWithItems,
     }) {
       hot = [];
-      rack = { letters: [], max: 5 };
+      player = { letters: [], rackSize: 5, hp: 100 };
       startIndex = undefined;
 
       game = {
@@ -181,7 +184,7 @@ export function newParser() {
     },
 
     SyncNewBoardState({ squaresWithLetters }) {
-      if (startIndex && game.you.name === "") {
+      if (startIndex !== undefined && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
       }
 
@@ -189,7 +192,7 @@ export function newParser() {
         letters: [],
         owners: [],
         hot,
-        rack,
+        player,
       };
 
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
@@ -206,17 +209,27 @@ export function newParser() {
     },
 
     NewTilePacket({ newTilePacket }) {
-      rack = {
+      player = {
+        ...player,
         letters: newTilePacket.map((t) => t.letter),
-        max: rack.max,
       };
     },
 
-    UpdateCurrentTilePacket({ tiles }) {
-      rack = {
+    UpdateCurrentTilePacket({ tiles, scoringEvents, playerDied }) {
+      player = {
+        ...player,
         letters: tiles.map((t) => t.letter),
-        max: rack.max,
       };
+      if (playerDied) {
+        player.hp = 0;
+      }
+      if (tiles.length === 0 && !scoringEvents) {
+        // This is an overload, so merged it with the bomb we've just applied
+        // instead of waiting for the next board sync to apply it
+        // This is based on an assumption that there won't be any other board
+        // events in between the UseBomb and this event for an overload
+        game.timeline[game.timeline.length - 1].player = player;
+      }
     },
 
     UseBomb({ indexesToRemove }) {
@@ -234,10 +247,17 @@ export function newParser() {
 
     RequestUpgradeResponse({ success, levelUpgs }) {
       if (!success) return;
-      rack = {
-        letters: rack.letters,
-        max: 5 + levelUpgs.filter((u) => u === "letter_slot").length,
+      player = {
+        ...player,
+        rackSize: 5 + levelUpgs.filter((u) => u === "letter_slot").length,
       };
+    },
+
+    HPSync({ playerHP: hp }) {
+      player = { ...player, hp };
+    },
+    ExitedGas({ playerHP: hp }) {
+      player = { ...player, hp };
     },
 
     NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {

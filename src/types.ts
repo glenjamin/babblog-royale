@@ -75,9 +75,10 @@ type SparseArray<T> = Array<T | void>;
 export type GameStep = {
   letters: SparseArray<Letter>;
   owners: SparseArray<PlayerIndex>;
-  rack: {
+  player: {
     letters: Array<Letter>;
-    max: number;
+    rackSize: number;
+    hp: number;
   };
   hot: SparseArray<HotZone>;
 };
