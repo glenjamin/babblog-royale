@@ -15,7 +15,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
   return (
     <>
       <Row className="justify-content-sm-center">
-        <Col className="mt-3" sm="auto">
+        <Col sm="auto">
           <Pagination>
             <Pagination.Prev disabled={step === 0} onClick={stepBack}>
               Back
@@ -31,7 +31,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
         </Col>
       </Row>
       <Row className="justify-content-sm-center">
-        <Col className="mb-3" sm="auto">
+        <Col sm="auto">
           <Form.Range
             min="0"
             max={max}

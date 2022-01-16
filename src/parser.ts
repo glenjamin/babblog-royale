@@ -147,7 +147,7 @@ export function newParser() {
       squaresWithItems,
     }) {
       hot = [];
-      player = { letters: [], rackSize: 5, hp: 100 };
+      player = { letters: [], rackSize: 5, hp: 100, words: [] };
       startIndex = undefined;
 
       game = {
@@ -195,6 +195,11 @@ export function newParser() {
         player,
       };
 
+      // Only use player.words once
+      if (player.words.length) {
+        player = { ...player, words: [] };
+      }
+
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
         state.letters[index] = letter;
         if (playerLivingOn) {
@@ -222,6 +227,11 @@ export function newParser() {
       };
       if (playerDied) {
         player.hp = 0;
+      }
+      if (scoringEvents) {
+        player.words = scoringEvents
+          .map(({ label }) => label)
+          .filter((word) => !word.includes(" "));
       }
       if (tiles.length === 0 && !scoringEvents) {
         // This is an overload, so merged it with the bomb we've just applied
@@ -274,7 +284,7 @@ export function newParser() {
 
     FinalItemsAndMMR({ newMMR, oldMMR, placement }) {
       game.you = {
-        name: game.you.name,
+        ...game.you,
         MMR: newMMR,
         oldMMR,
         position: placement,

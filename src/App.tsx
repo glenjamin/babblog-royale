@@ -2,6 +2,8 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Stack from "react-bootstrap/Stack";
+import Tabs from "react-bootstrap/Tabs";
+import Tab from "react-bootstrap/Tab";
 
 import Navbar from "./Navbar";
 import Importer from "./Importer";
@@ -10,6 +12,7 @@ import GameGrid from "./GameGrid";
 import GameStepper from "./GameStepper";
 import PlayerState from "./PlayerState";
 import PlayerList from "./PlayerList";
+import Words from "./Words";
 
 import useAppReducer from "./reducer";
 
@@ -47,23 +50,32 @@ function App() {
               selectedPlayer={selectedPlayer}
             />
           </Col>
-          <Col>
-            {/* Sidebar */}
-            <Stack>
-              <GameStepper
-                step={gameStep}
-                max={game.timeline.length - 1}
-                stepTo={actions.chooseStep}
-                stepBack={actions.stepBack}
-                stepForwards={actions.stepForwards}
-              />
-              <PlayerState {...game.timeline[gameStep].player} />
-              <PlayerList
-                players={game.players}
-                selectedPlayer={selectedPlayer}
-                selectPlayer={actions.selectPlayer}
-              />
-            </Stack>
+          {/* Sidebar */}
+          <Col className="border-start ps-0">
+            <Tabs defaultActiveKey="steps" className="mt-3 ps-2">
+              <Tab eventKey="steps" title="Steps">
+                <Stack className="p-2">
+                  <GameStepper
+                    step={gameStep}
+                    max={game.timeline.length - 1}
+                    stepTo={actions.chooseStep}
+                    stepBack={actions.stepBack}
+                    stepForwards={actions.stepForwards}
+                  />
+                  <PlayerState {...game.timeline[gameStep].player} />
+                  <PlayerList
+                    players={game.players}
+                    selectedPlayer={selectedPlayer}
+                    selectPlayer={actions.selectPlayer}
+                  />
+                </Stack>
+              </Tab>
+              <Tab eventKey="words" title="Words">
+                <Stack className="p-2">
+                  <Words timeline={game.timeline} stepTo={actions.chooseStep} />
+                </Stack>
+              </Tab>
+            </Tabs>
           </Col>
         </Row>
       </Container>

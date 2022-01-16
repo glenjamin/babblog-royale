@@ -79,6 +79,7 @@ export type GameStep = {
     letters: Array<Letter>;
     rackSize: number;
     hp: number;
+    words: string[];
   };
   hot: SparseArray<HotZone>;
 };

@@ -11,8 +11,8 @@ function PlayerState({
   hp,
 }: GameStep["player"]): JSX.Element {
   return (
-    <Row className="justify-content-sm-center">
-      <Col className="pb-3 d-flex" sm="auto">
+    <Row className="justify-content-sm-center my-3">
+      <Col className="d-flex" sm="auto">
         {letters.map((letter, i) => (
           <LetterCell key={i} letter={letter} />
         ))}

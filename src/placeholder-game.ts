@@ -43,7 +43,12 @@ const placeholderGame: Game = {
       letters: [],
       owners: [],
       hot: [],
-      player: { rackSize: 5, letters: ["a", "i", "a", "i", "a"], hp: 100 },
+      player: {
+        rackSize: 5,
+        letters: ["a", "i", "a", "i", "a"],
+        hp: 100,
+        words: [],
+      },
     },
   ],
   kills: [],
