@@ -219,7 +219,14 @@ export function newParser() {
       };
     },
 
-    UseBomb() {},
+    UseBomb({ indexesToRemove }) {
+      const last = game.timeline[game.timeline.length - 1];
+      const letters = last.letters.slice();
+      indexesToRemove.forEach((i) => {
+        delete letters[i];
+      });
+      game.timeline.push({ ...last, letters });
+    },
 
     UpdateCurrentItems() {},
 
