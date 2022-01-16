@@ -66,17 +66,21 @@ export type Letter =
   | "y"
   | "z";
 
-export type Bonus =
-  | "2x_word"
-  | "3x_word"
-  | "3x_letter"
-  | "5x_letter"
-  | "bomb"
-  | "reroll_all"
-  | "medkit"
-  | "letter_s";
+export type Item = "bomb" | "reroll_all" | "medkit" | "letter_s";
+
+export type Bonus = Item | "2x_word" | "3x_word" | "3x_letter" | "5x_letter";
 
 type SparseArray<T> = Array<T | void>;
+
+export type GameStep = {
+  letters: SparseArray<Letter>;
+  owners: SparseArray<PlayerIndex>;
+  rack: {
+    letters: Array<Letter>;
+    max: number;
+  };
+  hot: SparseArray<HotZone>;
+};
 
 export type Game = {
   id: number;
@@ -85,12 +89,8 @@ export type Game = {
   board: {
     size: number;
     base: SparseArray<Bonus>;
-    timeline: Array<{
-      letters: SparseArray<Letter>;
-      owners: SparseArray<PlayerIndex>;
-      hot: SparseArray<HotZone>;
-    }>;
   };
+  timeline: Array<GameStep>;
   kills: Array<Kill>;
   winner: PlayerName | null;
   you: {

@@ -32,7 +32,7 @@ describe("Parsing", () => {
       expect(games).toHaveLength(1);
     });
     it("should detect the player", () => {
-      // console.dir(game);
+      console.dir(game.timeline);
       expect(game).toHaveProperty("you.name", "Glenjamin");
     });
   });

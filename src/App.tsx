@@ -7,8 +7,9 @@ import Navbar from "./Navbar";
 import Importer from "./Importer";
 import Hotkeys from "./Hotkeys";
 import GameGrid from "./GameGrid";
-import PlayerList from "./PlayerList";
 import GameStepper from "./GameStepper";
+import Rack from "./Rack";
+import PlayerList from "./PlayerList";
 
 import useAppReducer from "./reducer";
 
@@ -51,11 +52,12 @@ function App() {
             <Stack>
               <GameStepper
                 step={gameStep}
-                max={game.board.timeline.length - 1}
+                max={game.timeline.length - 1}
                 stepTo={actions.chooseStep}
                 stepBack={actions.stepBack}
                 stepForwards={actions.stepForwards}
               />
+              <Rack {...game.timeline[gameStep].rack} />
               <PlayerList
                 players={game.players}
                 selectedPlayer={selectedPlayer}

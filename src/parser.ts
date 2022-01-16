@@ -1,6 +1,8 @@
 import {
   Bonus,
   Game,
+  GameStep,
+  Item,
   Letter,
   PlayerDetails,
   PlayerIndex,
@@ -10,7 +12,7 @@ import {
 
 const HOT_ZONE = "the hot zone";
 
-export type Events = {
+type Events = {
   Joined: {
     room: number;
     goldenRoyale: boolean;
@@ -48,6 +50,40 @@ export type Events = {
       score: number;
     }>;
   };
+  NewTilePacket: {
+    newTilePacket: Rack;
+    inventory: Inventory;
+    newLetter?: true;
+  };
+  UpdateCurrentTilePacket: {
+    tiles: Rack;
+    inventory: Inventory;
+    levelStars: number; // money
+    points: number; // total points
+    reroll?: number;
+    scoringEvents?: Array<{ label: string; score: number }>;
+    playerKills?: number;
+    playerDied?: true;
+    playerKilledBy?: string;
+    killedByWord?: string;
+  };
+  UseBomb: {
+    indexesToRemove: Array<number>;
+    originIndexes: Array<number>;
+  };
+  UpdateCurrentItems: {
+    inventory: Inventory;
+  };
+  RequestItemResponse: {
+    success: boolean;
+    inventory: Inventory;
+    levelStars: number;
+  };
+  RequestUpgradeResponse: {
+    success: boolean;
+    levelStars: number;
+    levelUpgs: Array<"letter_slot" | "timer_decrease" | "item_slot">;
+  };
   NewPlayerDeath: {
     playerName: PlayerName;
     playerKilledBy: PlayerName;
@@ -68,6 +104,11 @@ export type Events = {
     indexesToClose: Array<number>;
   };
 };
+type Rack = Array<{ letter: Letter; points: number }>;
+type Inventory = Array<{ itemType: Item }>;
+type Handlers = {
+  [Event in keyof Events]: (payload: Events[Event]) => void;
+};
 
 export function newParser() {
   const games: Array<typeof game> = [];
@@ -85,7 +126,15 @@ export function newParser() {
    */
   let hot: Array<"hot" | "warm"> = [];
 
-  const handlers = {
+  /**
+   * We'll keep copying this into each timeline step
+   */
+  let rack: {
+    letters: Array<Letter>;
+    max: number;
+  };
+
+  const handlers: Handlers = {
     Joined({
       room,
       goldenRoyale,
@@ -93,8 +142,9 @@ export function newParser() {
       playerList,
       squaresWithMults,
       squaresWithItems,
-    }: Events["Joined"]) {
+    }) {
       hot = [];
+      rack = { letters: [], max: 5 };
       startIndex = undefined;
 
       game = {
@@ -104,8 +154,8 @@ export function newParser() {
         board: {
           size: gridWidth,
           base: Array(gridWidth * gridWidth),
-          timeline: [],
         },
+        timeline: [],
         kills: [],
         winner: null,
         you: {
@@ -126,19 +176,20 @@ export function newParser() {
       games.push(game);
     },
 
-    EndDropPhase({ startingPosition: { x, y } }: Events["EndDropPhase"]) {
+    EndDropPhase({ startingPosition: { x, y } }) {
       startIndex = game.board.size * y + x;
     },
 
-    SyncNewBoardState({ squaresWithLetters }: Events["SyncNewBoardState"]) {
+    SyncNewBoardState({ squaresWithLetters }) {
       if (startIndex && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
       }
 
-      const state: Game["board"]["timeline"][0] = {
+      const state: GameStep = {
         letters: [],
         owners: [],
         hot,
+        rack,
       };
 
       squaresWithLetters.forEach(({ index, letter, playerLivingOn }) => {
@@ -151,14 +202,38 @@ export function newParser() {
         }
       });
 
-      game.board.timeline.push(state);
+      game.timeline.push(state);
     },
 
-    NewPlayerDeath({
-      playerName: player,
-      playerKilledBy: by,
-      killedByWord,
-    }: Events["NewPlayerDeath"]) {
+    NewTilePacket({ newTilePacket }) {
+      rack = {
+        letters: newTilePacket.map((t) => t.letter),
+        max: rack.max,
+      };
+    },
+
+    UpdateCurrentTilePacket({ tiles }) {
+      rack = {
+        letters: tiles.map((t) => t.letter),
+        max: rack.max,
+      };
+    },
+
+    UseBomb() {},
+
+    UpdateCurrentItems() {},
+
+    RequestItemResponse() {},
+
+    RequestUpgradeResponse({ success, levelUpgs }) {
+      if (!success) return;
+      rack = {
+        letters: rack.letters,
+        max: 5 + levelUpgs.filter((u) => u === "letter_slot").length,
+      };
+    },
+
+    NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {
       if (by === HOT_ZONE) {
         game.kills.push({ type: "hot", player });
       } else {
@@ -166,15 +241,11 @@ export function newParser() {
       }
     },
 
-    EndGame({ winnerIndex }: Events["EndGame"]) {
+    EndGame({ winnerIndex }) {
       game.winner = game.players[winnerIndex].name;
     },
 
-    FinalItemsAndMMR({
-      newMMR,
-      oldMMR,
-      placement,
-    }: Events["FinalItemsAndMMR"]) {
+    FinalItemsAndMMR({ newMMR, oldMMR, placement }) {
       game.you = {
         name: game.you.name,
         MMR: newMMR,
@@ -183,14 +254,14 @@ export function newParser() {
       };
     },
 
-    CloseCircleChunk({ indexesToClose }: Events["CloseCircleChunk"]) {
+    CloseCircleChunk({ indexesToClose }) {
       hot = hot.slice();
       indexesToClose.forEach((i) => {
         hot[i] = "hot";
       });
     },
 
-    CloseCircle({ indexesToClose }: Events["CloseCircle"]) {
+    CloseCircle({ indexesToClose }) {
       hot = hot.slice();
       indexesToClose.forEach((i) => {
         if (!hot[i]) hot[i] = "warm";

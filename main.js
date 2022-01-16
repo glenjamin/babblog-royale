@@ -27,18 +27,18 @@ stream.once("close", () => {
 
   const last = games[games.length - 1];
 
-  printBoard(last.board);
+  printBoard(last);
 });
 
 /**
  *
- * @param {import("./src/types.js").Game['board']} board
+ * @param {import("./src/types.js").Game} game
  */
-function printBoard(board) {
-  const side = board.size;
+function printBoard(game) {
+  const side = game.board.size;
   const squares = side * side;
 
-  const grids = board.timeline.map((step) => {
+  const grids = game.timeline.map((step) => {
     /**
      * @type string[][]
      */

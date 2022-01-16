@@ -65,7 +65,7 @@ const handlers: Handlers = {
   chooseStep(state, { step }) {
     const { game } = state;
     if (step < 0) step = 0;
-    const max = game.board.timeline.length - 1;
+    const max = game.timeline.length - 1;
     if (step >= max) step = max;
     return update(state, { gameStep: step });
   },

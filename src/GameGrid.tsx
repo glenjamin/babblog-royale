@@ -13,7 +13,7 @@ export default function GameGrid({
 }: GameGridProps) {
   const size = game.board.size;
   const range = Array(size).fill(0);
-  const state = game.board.timeline[step];
+  const state = game.timeline[step];
   return (
     <table cellSpacing={0} cellPadding={0} className={styles.board}>
       <tbody>
@@ -58,7 +58,7 @@ interface GasOverlayProps {
 function GasOverlay({ state }: GasOverlayProps): JSX.Element | null {
   return state ? <div className={styles[state]}></div> : null;
 }
-function EmptyCell() {
+export function EmptyCell() {
   return <div className={styles.empty} />;
 }
 const ownerColours = {
@@ -81,7 +81,7 @@ const ownerColours = {
 } as const;
 interface LetterProps {
   letter: Letter;
-  owner: PlayerDetails | void;
+  owner?: PlayerDetails;
   isSelected?: boolean;
 }
 export function LetterCell({

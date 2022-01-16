@@ -37,8 +37,15 @@ const placeholderGame: Game = {
   board: {
     size: 31,
     base: [],
-    timeline: [{ letters: [], owners: [], hot: [] }],
   },
+  timeline: [
+    {
+      letters: [],
+      owners: [],
+      hot: [],
+      rack: { max: 5, letters: ["h", "e", "l", "l", "o"] },
+    },
+  ],
   kills: [],
   winner: null,
   you: {
@@ -68,8 +75,8 @@ const placeholderGame: Game = {
   const player = players[i];
   const offset = 1 + (1 + i * 2) * placeholderGame.board.size;
   Array.from(word).forEach((letter, i) => {
-    placeholderGame.board.timeline[0].letters[offset + i] = letter as Letter;
-    placeholderGame.board.timeline[0].owners[offset + i] = player.index;
+    placeholderGame.timeline[0].letters[offset + i] = letter as Letter;
+    placeholderGame.timeline[0].owners[offset + i] = player.index;
   });
 });
 
