@@ -13,6 +13,9 @@ import {
 const HOT_ZONE = "the hot zone";
 
 type Events = {
+  ServerLoginConfirmation: {
+    xpLevels: Array<number>;
+  };
   Joined: {
     room: number;
     goldenRoyale: boolean;
@@ -84,6 +87,13 @@ type Events = {
     levelStars: number;
     levelUpgs: Array<"letter_slot" | "timer_decrease" | "item_slot">;
   };
+  LetterCostSync: {
+    instantLetterCost: number;
+    levelStars: number;
+  };
+  LevelStarSync: {
+    levelStars: number;
+  };
   HPSync: {
     playerHP: number;
   };
@@ -119,6 +129,10 @@ type Handlers = {
 export function newParser() {
   const games: Array<typeof game> = [];
 
+  /** The level boundaries */
+  let levels: Array<number>;
+
+  /** The game currently being parsed */
   let game: Game;
 
   /**
@@ -138,6 +152,9 @@ export function newParser() {
   let player: GameStep["player"];
 
   const handlers: Handlers = {
+    ServerLoginConfirmation({ xpLevels }) {
+      levels = xpLevels;
+    },
     Joined({
       room,
       goldenRoyale,
@@ -147,13 +164,23 @@ export function newParser() {
       squaresWithItems,
     }) {
       hot = [];
-      player = { letters: [], rackSize: 5, hp: 100, words: [] };
+      player = {
+        letters: [],
+        rackSize: 5,
+        items: [],
+        itemSlots: 1,
+        hp: 100,
+        words: [],
+        money: 0,
+        points: 0,
+      };
       startIndex = undefined;
 
       game = {
         id: room,
         golden: goldenRoyale,
         players: indexPlayers(playerList),
+        levels,
         board: {
           size: gridWidth,
           base: Array(gridWidth * gridWidth),
@@ -204,38 +231,52 @@ export function newParser() {
       addGameStep({ letters, owners });
     },
 
-    UseBomb({ indexesToRemove }) {
-      const letters = game.timeline[game.timeline.length - 1].letters.slice();
+    UseBomb({ indexesToRemove, originIndexes }) {
+      const last = game.timeline[game.timeline.length - 1];
+
+      // TODO: record bomb sources somewhere?
+      // const ownerIndex = last.owners[originIndexes[0]];
+      // if (ownerIndex) {
+      //   const owner = game.players[ownerIndex];
+      // }
+
+      const letters = last.letters.slice();
       indexesToRemove.forEach((i) => {
         delete letters[i];
       });
-
       addGameStep({ letters });
     },
 
-    NewTilePacket({ newTilePacket, newLetter }) {
-      player = {
-        ...player,
-        letters: newTilePacket.map((t) => t.letter),
-      };
+    NewTilePacket({ newTilePacket, inventory, newLetter }) {
+      updatePlayer({ tiles: newTilePacket, inventory });
       if (newLetter) {
         addGameStep({});
       }
     },
 
-    UpdateCurrentTilePacket({ tiles, scoringEvents, playerDied }) {
-      player = {
-        ...player,
-        letters: tiles.map((t) => t.letter),
+    UpdateCurrentTilePacket({
+      tiles,
+      points,
+      levelStars,
+      scoringEvents,
+      playerDied,
+    }) {
+      const update: PlayerUpdate = {
+        points,
+        levelStars,
+        tiles,
       };
       if (playerDied) {
-        player.hp = 0;
+        update.hp = 0;
       }
       if (scoringEvents) {
-        player.words = scoringEvents
+        update.words = scoringEvents
           .map(({ label }) => label)
           .filter((word) => !word.includes(" "));
       }
+
+      updatePlayer(update);
+
       if (tiles.length === 0 && !scoringEvents && !playerDied) {
         // This is an overload, so merge it with the bomb we've just applied
         // instead of waiting for the next board sync to apply it
@@ -245,23 +286,37 @@ export function newParser() {
       }
     },
 
-    UpdateCurrentItems() {},
+    UpdateCurrentItems({ inventory }) {
+      updatePlayer({ inventory });
+    },
 
-    RequestItemResponse() {},
-
-    RequestUpgradeResponse({ success, levelUpgs }) {
+    RequestItemResponse({ success, levelStars, inventory }) {
       if (!success) return;
-      player = {
-        ...player,
+      updatePlayer({ levelStars, inventory });
+      addGameStep({});
+    },
+
+    RequestUpgradeResponse({ success, levelStars, levelUpgs }) {
+      if (!success) return;
+      updatePlayer({
+        levelStars,
         rackSize: 5 + levelUpgs.filter((u) => u === "letter_slot").length,
-      };
+        itemSlots: 1 + levelUpgs.filter((u) => u === "item_slot").length,
+      });
+    },
+
+    LetterCostSync({ levelStars }) {
+      updatePlayer({ levelStars });
+    },
+    LevelStarSync({ levelStars }) {
+      updatePlayer({ levelStars });
     },
 
     HPSync({ playerHP: hp }) {
-      player = { ...player, hp };
+      updatePlayer({ hp });
     },
     ExitedGas({ playerHP: hp }) {
-      player = { ...player, hp };
+      updatePlayer({ hp });
     },
 
     NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {
@@ -300,6 +355,25 @@ export function newParser() {
     },
   };
 
+  type PlayerUpdate = Partial<
+    Omit<GameStep["player"], "money" | "inventory" | "letters"> & {
+      levelStars: number;
+      inventory: Array<{ itemType: Item }>;
+      tiles: Array<{ letter: Letter }>;
+    }
+  >;
+  function updatePlayer(update: PlayerUpdate) {
+    const { levelStars, inventory, tiles, ...compatible } = update;
+    const newPlayer: GameStep["player"] = { ...player, ...compatible };
+    if (levelStars !== undefined) newPlayer.money = levelStars;
+    // TODO: if the player is losing a bomb, apply it on the correct event
+    // Usually the inventory sync event comes a bit later
+    if (inventory) newPlayer.items = inventory.map((i) => i.itemType);
+    if (tiles) newPlayer.letters = tiles.map((t) => t.letter);
+
+    player = newPlayer;
+  }
+
   function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
     const last = game.timeline[game.timeline.length - 1];
     game.timeline.push({
@@ -311,7 +385,7 @@ export function newParser() {
 
     // Only use player.words once
     if (player.words.length) {
-      player = { ...player, words: [] };
+      updatePlayer({ words: [] });
     }
   }
 

@@ -62,7 +62,10 @@ function App() {
                     stepBack={actions.stepBack}
                     stepForwards={actions.stepForwards}
                   />
-                  <PlayerState {...game.timeline[gameStep].player} />
+                  <PlayerState
+                    levels={game.levels}
+                    {...game.timeline[gameStep].player}
+                  />
                   <PlayerList
                     players={game.players}
                     selectedPlayer={selectedPlayer}

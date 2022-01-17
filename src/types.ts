@@ -78,7 +78,11 @@ export type GameStep = {
   player: {
     letters: Array<Letter>;
     rackSize: number;
+    items: Array<Item>;
+    itemSlots: number;
     hp: number;
+    points: number;
+    money: number;
     words: string[];
   };
   hot: SparseArray<HotZone>;
@@ -88,6 +92,7 @@ export type Game = {
   id: number;
   golden: boolean;
   players: Array<PlayerDetails>;
+  levels: Array<number>;
   board: {
     size: number;
     base: SparseArray<Bonus>;

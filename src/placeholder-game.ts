@@ -33,6 +33,7 @@ const players: PlayerDetails[] = [
 const placeholderGame: Game = {
   id: 0,
   golden: true,
+  levels: [0, 10, 30, 70, 110, 160, 200, 250, 320, 380, 460, 600, 800, 1050],
   players,
   board: {
     size: 31,
@@ -46,8 +47,12 @@ const placeholderGame: Game = {
       player: {
         rackSize: 5,
         letters: ["a", "i", "a", "i", "a"],
+        items: ["bomb"],
+        itemSlots: 1,
         hp: 100,
         words: [],
+        money: 42,
+        points: 801,
       },
     },
   ],

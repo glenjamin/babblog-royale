@@ -130,7 +130,7 @@ const bonusContentMap = {
 interface BonusProps {
   bonus: Bonus;
 }
-function BonusCell({ bonus }: BonusProps): JSX.Element {
+export function BonusCell({ bonus }: BonusProps): JSX.Element {
   return (
     <div className={styles[bonusTypeMap[bonus]]}>{bonusContentMap[bonus]}</div>
   );
