@@ -249,9 +249,7 @@ export function newParser() {
 
     NewTilePacket({ newTilePacket, inventory, newLetter }) {
       updatePlayer({ tiles: newTilePacket, inventory });
-      if (newLetter) {
-        addGameStep({});
-      }
+      addGameStep({});
     },
 
     UpdateCurrentTilePacket({
@@ -375,6 +373,10 @@ export function newParser() {
   }
 
   function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
+    if (game.timeline.length === 0 && !step.letters) {
+      return;
+    }
+
     const last = game.timeline[game.timeline.length - 1];
     game.timeline.push({
       ...last,
