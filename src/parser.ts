@@ -126,6 +126,11 @@ type Handlers = {
   [Event in keyof Events]: (payload: Events[Event]) => void;
 };
 
+const isGameMalformed = (game: Game) => {
+  // TODO: Make this function more thorough
+  return game.timeline.length === 0;
+};
+
 export function newParser() {
   const games: Array<typeof game> = [];
 
@@ -433,7 +438,7 @@ export function newParser() {
       handleLine(buffer);
     },
     games() {
-      return games;
+      return games.filter((game) => !isGameMalformed(game));
     },
   };
 }
