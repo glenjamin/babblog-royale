@@ -36,4 +36,15 @@ describe("Parsing", () => {
       expect(game).toHaveProperty("you.name", "Glenjamin");
     });
   });
+
+  describe("disconnected immediately", () => {
+    let games: Game[];
+    beforeAll(async () => {
+      games = await parseSample("immediate-disconnect");
+    });
+
+    it("should not return empty games", () => {
+      expect(games).toHaveLength(0);
+    });
+  });
 });
