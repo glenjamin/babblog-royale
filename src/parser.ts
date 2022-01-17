@@ -126,9 +126,20 @@ type Handlers = {
   [Event in keyof Events]: (payload: Events[Event]) => void;
 };
 
-const isGameMalformed = (game: Game) => {
-  // TODO: Make this function more thorough
-  return game.timeline.length === 0;
+const emptyStep: GameStep = {
+  hot: [],
+  letters: [],
+  owners: [],
+  player: {
+    letters: [],
+    rackSize: 5,
+    items: [],
+    itemSlots: 1,
+    hp: 100,
+    words: [],
+    money: 0,
+    points: 0,
+  },
 };
 
 export function newParser() {
@@ -169,16 +180,7 @@ export function newParser() {
       squaresWithItems,
     }) {
       hot = [];
-      player = {
-        letters: [],
-        rackSize: 5,
-        items: [],
-        itemSlots: 1,
-        hp: 100,
-        words: [],
-        money: 0,
-        points: 0,
-      };
+      player = emptyStep.player;
       startIndex = undefined;
 
       game = {
@@ -190,7 +192,7 @@ export function newParser() {
           size: gridWidth,
           base: Array(gridWidth * gridWidth),
         },
-        timeline: [],
+        timeline: [emptyStep],
         kills: [],
         winner: null,
         you: {
@@ -383,6 +385,12 @@ export function newParser() {
     }
 
     const last = game.timeline[game.timeline.length - 1];
+
+    // We've got a real initial state, so we can throw away the placeholder
+    if (last === emptyStep) {
+      game.timeline.pop();
+    }
+
     game.timeline.push({
       ...last,
       player,
@@ -442,6 +450,11 @@ export function newParser() {
     },
   };
 }
+
+const isGameMalformed = (game: Game) => {
+  // TODO: Make this function more thorough
+  return game.timeline.length === 0;
+};
 
 function indexPlayers(players: Omit<PlayerDetails, "index">[]) {
   return players.map(({ name, socketID }, index) => ({

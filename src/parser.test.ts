@@ -21,9 +21,10 @@ async function parseSample(name: string): Promise<Game[]> {
 }
 
 describe("Parsing", () => {
+  let games: Game[];
+  let game: Game;
+
   describe("died to the hot zone", () => {
-    let games: Game[];
-    let game: Game;
     beforeAll(async () => {
       games = await parseSample("died-to-hot-zone");
       [game] = games;
@@ -38,13 +39,17 @@ describe("Parsing", () => {
   });
 
   describe("disconnected immediately", () => {
-    let games: Game[];
     beforeAll(async () => {
       games = await parseSample("immediate-disconnect");
+      [game] = games;
     });
 
-    it("should not return empty games", () => {
-      expect(games).toHaveLength(0);
+    it("should still have a game", () => {
+      expect(games).toHaveLength(1);
+    });
+    it("should have an empty placeholder state", () => {
+      expect(game.timeline).toHaveLength(1);
+      expect(game.timeline[0].letters).toHaveLength(0);
     });
   });
 });
