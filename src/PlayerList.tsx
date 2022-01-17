@@ -6,11 +6,13 @@ interface PlayerListProps {
   players: PlayerDetails[];
   selectedPlayer: number | null;
   selectPlayer: (player: number | null) => void;
+  currentStep: number;
 }
 function PlayerList({
   players,
   selectedPlayer,
   selectPlayer,
+  currentStep,
 }: PlayerListProps): JSX.Element {
   return (
     <ListGroup>
@@ -18,6 +20,9 @@ function PlayerList({
         <PlayerListItem
           key={i}
           player={player}
+          isDead={
+            player.killedStep !== null && currentStep >= player.killedStep
+          }
           isSelected={selectedPlayer === i}
           index={i}
           selectPlayer={selectPlayer}
@@ -30,12 +35,14 @@ function PlayerList({
 interface PlayerListItemProps {
   player: PlayerDetails;
   index: number;
+  isDead: boolean;
   isSelected: boolean;
   selectPlayer: (player: number | null) => void;
 }
 function PlayerListItem({
   player,
   index,
+  isDead,
   isSelected,
   selectPlayer,
 }: PlayerListItemProps): JSX.Element {
@@ -46,8 +53,10 @@ function PlayerListItem({
       action
       active={isSelected}
     >
-      <LetterCell letter="a" owner={player} />
-      <div className="ms-2">{player.name}</div>
+      <LetterCell letter="a" owner={isDead ? undefined : player} />
+      <div className="ms-2">
+        {player.name} {isDead && "☠"}
+      </div>
     </ListGroup.Item>
   );
 }

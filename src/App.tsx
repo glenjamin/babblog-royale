@@ -70,6 +70,7 @@ function App() {
                     players={game.players}
                     selectedPlayer={selectedPlayer}
                     selectPlayer={actions.selectPlayer}
+                    currentStep={gameStep}
                   />
                 </Stack>
               </Tab>

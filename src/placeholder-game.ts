@@ -28,6 +28,7 @@ const players: PlayerDetails[] = [
   name: name as PlayerName,
   socketID: ("xx_" + name) as SocketID,
   index: i as PlayerIndex,
+  killedStep: null,
 }));
 
 const placeholderGame: Game = {
