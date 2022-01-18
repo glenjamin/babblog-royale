@@ -98,6 +98,7 @@ export type GameStep = {
     words: string[];
   };
   hot: SparseArray<HotZone>;
+  scores: Array<number>;
 };
 
 export type Game = {

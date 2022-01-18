@@ -130,6 +130,7 @@ const emptyStep: GameStep = {
   hot: [],
   letters: [],
   owners: [],
+  scores: [],
   player: {
     letters: [],
     rackSize: 5,
@@ -217,7 +218,7 @@ export function newParser() {
       startIndex = game.board.size * y + x;
     },
 
-    SyncNewBoardState({ squaresWithLetters }) {
+    SyncNewBoardState({ squaresWithLetters, playerScores }) {
       if (startIndex !== undefined && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
       }
@@ -235,7 +236,13 @@ export function newParser() {
         }
       });
 
-      addGameStep({ letters, owners });
+      const scores: GameStep["scores"] = [];
+      playerScores.forEach(({ socketID, score }) => {
+        const index = findPlayerIndexBySocketID(socketID);
+        scores[index] = score;
+      });
+
+      addGameStep({ letters, owners, scores });
     },
 
     UseBomb({ indexesToRemove, originIndexes }) {
@@ -390,7 +397,9 @@ export function newParser() {
     player = newPlayer;
   }
 
-  function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
+  function addGameStep(
+    step: Partial<Pick<GameStep, "letters" | "owners" | "scores">>
+  ) {
     // If we don't have any real steps yet
     if (game.timeline[0] === emptyStep) {
       // Don't create a step until we have letters
@@ -444,6 +453,10 @@ export function newParser() {
     const handler = handlers[event];
     if (handler) handler(payload);
   }
+
+  const findPlayerIndexBySocketID = (socketID: SocketID) => {
+    return game.players.findIndex((player) => player.socketID === socketID);
+  };
 
   return {
     parse(chunk: string) {

@@ -55,6 +55,7 @@ const placeholderGame: Game = {
         money: 42,
         points: 801,
       },
+      scores: [],
     },
   ],
   kills: [],
