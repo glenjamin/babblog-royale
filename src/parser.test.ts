@@ -2,7 +2,7 @@ import path from "path";
 import { createReadStream } from "fs";
 
 import { newParser } from "./parser";
-import { Game } from "./types";
+import { Game, GameStep } from "./types";
 
 async function parseSample(name: string): Promise<Game[]> {
   const parser = newParser();
@@ -33,8 +33,13 @@ describe("Parsing", () => {
       expect(games).toHaveLength(1);
     });
     it("should detect the player", () => {
-      console.dir(game.timeline);
       expect(game).toHaveProperty("you.name", "Glenjamin");
+    });
+    it("should have letters and owners in every step", () => {
+      expect(game.timeline).not.toHaveLength(0);
+      game.timeline.forEach((step, i) => {
+        expect([i, step]).toSatisfy(hasLetters);
+      });
     });
   });
 
@@ -49,7 +54,11 @@ describe("Parsing", () => {
     });
     it("should have an empty placeholder state", () => {
       expect(game.timeline).toHaveLength(1);
-      expect(game.timeline[0].letters).toHaveLength(0);
+      expect([0, game.timeline[0]]).not.toSatisfy(hasLetters);
     });
   });
 });
+
+function hasLetters([i, step]: [number, GameStep]): boolean {
+  return step.letters.some(Boolean);
+}

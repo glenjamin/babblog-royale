@@ -380,17 +380,18 @@ export function newParser() {
   }
 
   function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
-    if (game.timeline.length === 0 && !step.letters) {
-      return;
-    }
-
-    const last = game.timeline[game.timeline.length - 1];
-
-    // We've got a real initial state, so we can throw away the placeholder
-    if (last === emptyStep) {
+    // If we don't have any real steps yet
+    if (game.timeline[0] === emptyStep) {
+      // Don't create a step until we have letters
+      // this applies to item collections and new tiles
+      if (!step.letters) {
+        return;
+      }
+      // Once we do have letters, we can discard the placeholder empty step
       game.timeline.pop();
     }
 
+    const last = game.timeline[game.timeline.length - 1];
     game.timeline.push({
       ...last,
       player,
