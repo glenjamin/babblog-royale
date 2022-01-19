@@ -18,9 +18,13 @@ function PlayerList({
   timeline,
 }: PlayerListProps): JSX.Element {
   const { metrics } = timeline[currentStep];
+  // TODO: Toggle sorting by kills / score / default?
+  const sortedPlayers = [...players].sort(
+    (a, b) => metrics[b.index].score - metrics[a.index].score
+  );
   return (
     <ListGroup>
-      {players.map((player) => (
+      {sortedPlayers.map((player) => (
         <PlayerListItem
           key={player.index}
           player={player}
@@ -50,6 +54,7 @@ function PlayerListItem({
   metrics,
   selectPlayer,
 }: PlayerListItemProps): JSX.Element {
+  const killIndicator = "⚔".repeat(metrics.kills);
   return (
     <ListGroup.Item
       className={`d-flex flex-row align-items-center p-1`}
@@ -60,7 +65,7 @@ function PlayerListItem({
       <LetterCell letter="a" owner={isDead ? undefined : player} />
       <Metrics metrics={metrics} />
       <div className="ms-2">
-        {player.name} {Array(metrics.kills).fill("⚔").join("")}
+        {player.name} {killIndicator}
       </div>
     </ListGroup.Item>
   );
