@@ -21,6 +21,7 @@ export default function GameGrid({
           <tr key={row}>
             {range.map((_, col) => {
               const index = row * size + col;
+              const { bombedIndexes } = state;
               const letter = state.letters[index];
               const owner = state.owners[index];
               const hot = state.hot[index];
@@ -36,6 +37,7 @@ export default function GameGrid({
                         owner !== undefined ? game.players[owner] : undefined
                       }
                       isSelected={selectedPlayer === owner}
+                      isBombed={bombedIndexes.includes(index)}
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />
@@ -83,16 +85,18 @@ interface LetterProps {
   letter: Letter;
   owner?: PlayerDetails;
   isSelected?: boolean;
+  isBombed?: boolean;
 }
 export function LetterCell({
   letter,
   owner,
   isSelected = false,
+  isBombed = false,
 }: LetterProps): JSX.Element {
   const colour = owner ? ownerColours[owner.index] : "";
   return (
     <div
-      className={styles.letter}
+      className={`${styles.letter} ${isBombed && styles.explodingTile}`}
       title={owner ? owner.name : undefined}
       style={
         owner

@@ -104,6 +104,7 @@ export type GameStep = {
   };
   hot: SparseArray<HotZone>;
   metrics: Array<PlayerMetrics>;
+  bombedIndexes: Array<number>;
 };
 
 export type Game = {

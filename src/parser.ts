@@ -149,6 +149,7 @@ const emptyStep: GameStep = {
     money: 0,
     points: 0,
   },
+  bombedIndexes: [],
 };
 
 export function newParser() {
@@ -268,7 +269,7 @@ export function newParser() {
       indexesToRemove.forEach((i) => {
         delete letters[i];
       });
-      addGameStep({ letters });
+      addGameStep({ letters, bombedIndexes: originIndexes });
     },
 
     NewTilePacket({ newTilePacket, inventory, newLetter }) {
@@ -414,7 +415,9 @@ export function newParser() {
   }
 
   function addGameStep(
-    step: Partial<Pick<GameStep, "letters" | "owners" | "metrics">>
+    step: Partial<
+      Pick<GameStep, "letters" | "owners" | "metrics" | "bombedIndexes">
+    >
   ) {
     // If we don't have any real steps yet
     if (game.timeline[0] === emptyStep) {
@@ -432,6 +435,7 @@ export function newParser() {
       ...last,
       player,
       hot,
+      bombedIndexes: [],
       ...step,
     });
 

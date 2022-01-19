@@ -75,3 +75,24 @@
     transparent 100%
   );
 }
+
+.explodingTile {
+  composes: cell;
+  animation: 0.75s exploding;
+}
+
+@keyframes exploding {
+  from {
+  }
+
+  7% {
+    background-color: red;
+    transform: scale(3);
+    filter: drop-shadow(0 0 32px red);
+  }
+
+  to {
+    /* background-color: auto;
+    transform: auto; */
+  }
+}
