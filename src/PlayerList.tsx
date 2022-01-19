@@ -1,3 +1,4 @@
+import Badge from "react-bootstrap/Badge";
 import ListGroup from "react-bootstrap/ListGroup";
 import { DEAD_SCORE } from "./constants";
 import { LetterCell } from "./GameGrid";
@@ -72,10 +73,15 @@ function PlayerListItem({
   );
 }
 
-const Metrics = ({ metrics: { score } }: { metrics: PlayerMetrics }) => (
-  <div style={{ marginLeft: "8px", width: "20px", textAlign: "center" }}>
-    {score === DEAD_SCORE ? "☠" : levelFromScore(score)}
-  </div>
-);
+const Metrics = ({ metrics: { score } }: { metrics: PlayerMetrics }) => {
+  const dead = score === DEAD_SCORE;
+  return (
+    <div className="ms-3">
+      <Badge bg={dead ? "light" : "dark"}>
+        {dead ? "☠" : levelFromScore(score)}
+      </Badge>
+    </div>
+  );
+};
 
 export default PlayerList;
