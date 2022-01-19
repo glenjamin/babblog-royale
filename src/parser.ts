@@ -6,6 +6,7 @@ import {
   Letter,
   PlayerDetails,
   PlayerIndex,
+  PlayerMetrics,
   PlayerName,
   SocketID,
 } from "./types";
@@ -126,11 +127,18 @@ type Handlers = {
   [Event in keyof Events]: (payload: Events[Event]) => void;
 };
 
+export const emptyMetrics: PlayerMetrics[] = Array(16)
+  .fill(0)
+  .map(() => ({
+    score: 0,
+    kills: 0,
+  }));
+
 const emptyStep: GameStep = {
   hot: [],
   letters: [],
   owners: [],
-  scores: [],
+  metrics: emptyMetrics,
   player: {
     letters: [],
     rackSize: 5,
@@ -236,13 +244,15 @@ export function newParser() {
         }
       });
 
-      const scores: GameStep["scores"] = [];
+      const lastMetrics: GameStep["metrics"] =
+        game.timeline[game.timeline.length - 1].metrics;
+      const metrics = lastMetrics.map((m) => ({ ...m }));
       playerScores.forEach(({ socketID, score }) => {
         const index = findPlayerIndexBySocketID(socketID);
-        scores[index] = score;
+        metrics[index].score = score;
       });
 
-      addGameStep({ letters, owners, scores });
+      addGameStep({ letters, owners, metrics });
     },
 
     UseBomb({ indexesToRemove, originIndexes }) {
@@ -344,6 +354,12 @@ export function newParser() {
           word: killedByWord,
           step,
         });
+        const killer = game.players.find((p) => p.name === by);
+        if (killer) {
+          const { metrics } = game.timeline[game.timeline.length - 1];
+          metrics[killer.index].kills += 1;
+          console.log(metrics);
+        }
       }
       if (player) {
         player.killedStep = step;
@@ -398,7 +414,7 @@ export function newParser() {
   }
 
   function addGameStep(
-    step: Partial<Pick<GameStep, "letters" | "owners" | "scores">>
+    step: Partial<Pick<GameStep, "letters" | "owners" | "metrics">>
   ) {
     // If we don't have any real steps yet
     if (game.timeline[0] === emptyStep) {

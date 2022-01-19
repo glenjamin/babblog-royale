@@ -1,3 +1,4 @@
+import { emptyMetrics } from "./parser";
 import {
   Letter,
   PlayerName,
@@ -55,7 +56,7 @@ const placeholderGame: Game = {
         money: 42,
         points: 801,
       },
-      scores: [],
+      metrics: emptyMetrics,
     },
   ],
   kills: [],
