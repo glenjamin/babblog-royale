@@ -71,6 +71,7 @@ function App() {
                     selectedPlayer={selectedPlayer}
                     selectPlayer={actions.selectPlayer}
                     currentStep={gameStep}
+                    timeline={game.timeline}
                   />
                 </Stack>
               </Tab>

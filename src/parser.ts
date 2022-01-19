@@ -6,6 +6,7 @@ import {
   Letter,
   PlayerDetails,
   PlayerIndex,
+  PlayerMetrics,
   PlayerName,
   SocketID,
 } from "./types";
@@ -126,10 +127,18 @@ type Handlers = {
   [Event in keyof Events]: (payload: Events[Event]) => void;
 };
 
+export const emptyMetrics: PlayerMetrics[] = Array(16)
+  .fill(0)
+  .map(() => ({
+    score: 0,
+    kills: 0,
+  }));
+
 const emptyStep: GameStep = {
   hot: [],
   letters: [],
   owners: [],
+  metrics: emptyMetrics,
   player: {
     letters: [],
     rackSize: 5,
@@ -217,7 +226,7 @@ export function newParser() {
       startIndex = game.board.size * y + x;
     },
 
-    SyncNewBoardState({ squaresWithLetters }) {
+    SyncNewBoardState({ squaresWithLetters, playerScores }) {
       if (startIndex !== undefined && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
       }
@@ -235,7 +244,15 @@ export function newParser() {
         }
       });
 
-      addGameStep({ letters, owners });
+      const lastMetrics: GameStep["metrics"] =
+        game.timeline[game.timeline.length - 1].metrics;
+      const metrics = lastMetrics.map((m) => ({ ...m }));
+      playerScores.forEach(({ socketID, score }) => {
+        const index = findPlayerIndexBySocketID(socketID);
+        metrics[index].score = score;
+      });
+
+      addGameStep({ letters, owners, metrics });
     },
 
     UseBomb({ indexesToRemove, originIndexes }) {
@@ -337,6 +354,12 @@ export function newParser() {
           word: killedByWord,
           step,
         });
+        const killer = game.players.find((p) => p.name === by);
+        if (killer) {
+          const { metrics } = game.timeline[game.timeline.length - 1];
+          metrics[killer.index].kills += 1;
+          console.log(metrics);
+        }
       }
       if (player) {
         player.killedStep = step;
@@ -390,7 +413,9 @@ export function newParser() {
     player = newPlayer;
   }
 
-  function addGameStep(step: Partial<Pick<GameStep, "letters" | "owners">>) {
+  function addGameStep(
+    step: Partial<Pick<GameStep, "letters" | "owners" | "metrics">>
+  ) {
     // If we don't have any real steps yet
     if (game.timeline[0] === emptyStep) {
       // Don't create a step until we have letters
@@ -444,6 +469,10 @@ export function newParser() {
     const handler = handlers[event];
     if (handler) handler(payload);
   }
+
+  const findPlayerIndexBySocketID = (socketID: SocketID) => {
+    return game.players.findIndex((player) => player.socketID === socketID);
+  };
 
   return {
     parse(chunk: string) {

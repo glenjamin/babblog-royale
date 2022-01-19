@@ -84,6 +84,11 @@ export type Bonus = Item | "2x_word" | "3x_word" | "3x_letter" | "5x_letter";
 
 type SparseArray<T> = Array<T | void>;
 
+export interface PlayerMetrics {
+  score: number;
+  kills: number;
+}
+
 export type GameStep = {
   letters: SparseArray<Letter>;
   owners: SparseArray<PlayerIndex>;
@@ -98,6 +103,7 @@ export type GameStep = {
     words: string[];
   };
   hot: SparseArray<HotZone>;
+  metrics: Array<PlayerMetrics>;
 };
 
 export type Game = {
