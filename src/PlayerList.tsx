@@ -2,6 +2,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 import { DEAD_SCORE } from "./constants";
 import { LetterCell } from "./GameGrid";
 import { Game, PlayerDetails, PlayerMetrics } from "./types";
+import levelFromScore from "./utils/level-from-score";
 
 interface PlayerListProps {
   players: PlayerDetails[];
@@ -72,8 +73,8 @@ function PlayerListItem({
 }
 
 const Metrics = ({ metrics: { score } }: { metrics: PlayerMetrics }) => (
-  <div style={{ width: "40px", textAlign: "center" }}>
-    {score === DEAD_SCORE ? "☠" : score}
+  <div style={{ marginLeft: "8px", width: "20px", textAlign: "center" }}>
+    {score === DEAD_SCORE ? "☠" : levelFromScore(score)}
   </div>
 );
 
