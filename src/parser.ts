@@ -324,11 +324,22 @@ export function newParser() {
       updatePlayer({ hp });
     },
 
-    NewPlayerDeath({ playerName: player, playerKilledBy: by, killedByWord }) {
+    NewPlayerDeath({ playerName, playerKilledBy: by, killedByWord }) {
+      const step = game.timeline.length;
+      const player = game.players.find((p) => p.name === playerName);
       if (by === HOT_ZONE) {
-        game.kills.push({ type: "hot", player });
+        game.kills.push({ type: "hot", player: playerName, step });
       } else {
-        game.kills.push({ type: "word", player, by, word: killedByWord });
+        game.kills.push({
+          type: "word",
+          player: playerName,
+          by,
+          word: killedByWord,
+          step,
+        });
+      }
+      if (player) {
+        player.killedStep = step;
       }
     },
 
@@ -457,11 +468,12 @@ const isGameMalformed = (game: Game) => {
   return game.timeline.length === 0;
 };
 
-function indexPlayers(players: Omit<PlayerDetails, "index">[]) {
+function indexPlayers(players: Omit<PlayerDetails, "index" | "killedStep">[]) {
   return players.map(({ name, socketID }, index) => ({
     socketID,
     name,
     index: playerIndex(index),
+    killedStep: null,
   }));
 }
 

@@ -32,11 +32,23 @@ export type PlayerDetails = {
   name: PlayerName;
   socketID: SocketID;
   index: PlayerIndex;
+  killedStep: number | null;
 };
 
-export type Kill =
-  | { type: "hot"; player: PlayerName }
-  | { type: "word"; player: PlayerName; by: PlayerName; word: string };
+interface KillBase {
+  player: PlayerName;
+  step: number;
+}
+interface HotZoneKill extends KillBase {
+  type: "hot";
+}
+interface WordKill extends KillBase {
+  type: "word";
+  by: PlayerName;
+  word: string;
+}
+
+export type Kill = HotZoneKill | WordKill;
 
 export type Letter =
   | "a"
