@@ -58,9 +58,11 @@ function App() {
                   <GameStepper
                     step={gameStep}
                     max={game.timeline.length - 1}
-                    stepTo={actions.chooseStep}
+                    stepMeBack={actions.stepMeBack}
                     stepBack={actions.stepBack}
                     stepForwards={actions.stepForwards}
+                    stepTo={actions.chooseStep}
+                    stepMeForwards={actions.stepMeForwards}
                   />
                   <PlayerState
                     levels={game.levels}

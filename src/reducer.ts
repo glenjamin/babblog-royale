@@ -30,6 +30,8 @@ const creators = {
   chooseStep: (step: number) => ({ step }),
   stepBack: () => {},
   stepForwards: () => {},
+  stepMeBack: () => {},
+  stepMeForwards: () => {},
   selectPlayer: (player: number | null) => ({ player }),
 };
 
@@ -81,10 +83,41 @@ const handlers: Handlers = {
       payload: { step: state.gameStep + 1 },
     });
   },
+  stepMeBack(state) {
+    const { game, gameStep } = state;
+    return reducer(state, {
+      name: "chooseStep",
+      payload: { step: findMyStep(game, gameStep, -1) },
+    });
+  },
+  stepMeForwards(state) {
+    const { game, gameStep } = state;
+    return reducer(state, {
+      name: "chooseStep",
+      payload: { step: findMyStep(game, gameStep, 1) },
+    });
+  },
   selectPlayer(state, { player }) {
     return update(state, { selectedPlayer: player });
   },
 };
+
+function findMyStep(game: Game, step: number, direction: number): number {
+  while (true) {
+    step = step + direction;
+
+    // Reached the end
+    if (step <= 0 || step >= game.timeline.length - 1) {
+      return step;
+    }
+
+    const gameStep = game.timeline[step];
+    // Found some words or player died
+    if (gameStep.player.words.length || step === game.players[0].killedStep) {
+      return step;
+    }
+  }
+}
 
 type ActionName = keyof typeof creators;
 type ActionPayload<Name extends ActionName> = ReturnType<typeof creators[Name]>;

@@ -11,6 +11,8 @@ interface HotkeyProps {
   showImport(): void;
   stepBack(): void;
   stepForwards(): void;
+  stepMeBack(): void;
+  stepMeForwards(): void;
 }
 
 function Hotkeys({ showHelp, ...actions }: HotkeyProps): JSX.Element {
@@ -18,6 +20,8 @@ function Hotkeys({ showHelp, ...actions }: HotkeyProps): JSX.Element {
   useHotkeys("i", actions.showImport);
   useHotkeys("left", actions.stepBack);
   useHotkeys("right", actions.stepForwards);
+  useHotkeys("up", actions.stepMeBack);
+  useHotkeys("down", actions.stepMeForwards);
 
   return (
     <Modal show={showHelp} onHide={actions.hideHotkeyHelp}>
@@ -43,6 +47,14 @@ function Hotkeys({ showHelp, ...actions }: HotkeyProps): JSX.Element {
           <ListGroup.Item>
             Go forward a step
             <Hotkey hotkey="right" />
+          </ListGroup.Item>
+          <ListGroup.Item>
+            Go back to your last step
+            <Hotkey hotkey="up" />
+          </ListGroup.Item>
+          <ListGroup.Item>
+            Go forwards to your next step
+            <Hotkey hotkey="down" />
           </ListGroup.Item>
         </ListGroup>
       </Modal.Body>

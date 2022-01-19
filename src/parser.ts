@@ -358,7 +358,6 @@ export function newParser() {
         if (killer) {
           const { metrics } = game.timeline[game.timeline.length - 1];
           metrics[killer.index].kills += 1;
-          console.log(metrics);
         }
       }
       if (player) {
