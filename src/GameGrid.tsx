@@ -24,6 +24,7 @@ export default function GameGrid({
               const letter = state.letters[index];
               const owner = state.owners[index];
               const hot = state.hot[index];
+              const bombed = state.bombed[index];
               const bonus = game.board.base[index];
 
               return (
@@ -36,6 +37,7 @@ export default function GameGrid({
                         owner !== undefined ? game.players[owner] : undefined
                       }
                       isSelected={selectedPlayer === owner}
+                      isBombed={bombed}
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />
@@ -53,7 +55,7 @@ export default function GameGrid({
 }
 
 interface GasOverlayProps {
-  state: HotZone | void;
+  state: HotZone | undefined;
 }
 function GasOverlay({ state }: GasOverlayProps): JSX.Element | null {
   return state ? <div className={styles[state]}></div> : null;
@@ -83,16 +85,18 @@ interface LetterProps {
   letter: Letter;
   owner?: PlayerDetails;
   isSelected?: boolean;
+  isBombed?: boolean;
 }
 export function LetterCell({
   letter,
   owner,
   isSelected = false,
+  isBombed = false,
 }: LetterProps): JSX.Element {
   const colour = owner ? ownerColours[owner.index] : "";
   return (
     <div
-      className={styles.letter}
+      className={`${styles.letter} ${isBombed && styles.explodingTile}`}
       title={owner ? owner.name : undefined}
       style={
         owner

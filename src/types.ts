@@ -82,7 +82,7 @@ export type Item = "bomb" | "reroll_all" | "medkit" | "letter_s";
 
 export type Bonus = Item | "2x_word" | "3x_word" | "3x_letter" | "5x_letter";
 
-type SparseArray<T> = Array<T | void>;
+type SparseArray<T> = Array<T | undefined>;
 
 export interface PlayerMetrics {
   score: number;
@@ -92,6 +92,7 @@ export interface PlayerMetrics {
 export type GameStep = {
   letters: SparseArray<Letter>;
   owners: SparseArray<PlayerIndex>;
+  bombed: SparseArray<boolean>;
   player: {
     letters: Array<Letter>;
     rackSize: number;
