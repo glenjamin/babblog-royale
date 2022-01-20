@@ -149,7 +149,7 @@ const emptyStep: GameStep = {
     money: 0,
     points: 0,
   },
-  bombedIndexes: [],
+  bombedSquares: [],
 };
 
 export function newParser() {
@@ -266,10 +266,14 @@ export function newParser() {
       // }
 
       const letters = last.letters.slice();
+      const bombedSquares: GameStep["bombedSquares"] = [];
       indexesToRemove.forEach((i) => {
         delete letters[i];
       });
-      addGameStep({ letters, bombedIndexes: originIndexes });
+      originIndexes.forEach((i) => {
+        bombedSquares[i] = true;
+      });
+      addGameStep({ letters, bombedSquares });
     },
 
     NewTilePacket({ newTilePacket, inventory, newLetter }) {
@@ -359,7 +363,6 @@ export function newParser() {
         if (killer) {
           const { metrics } = game.timeline[game.timeline.length - 1];
           metrics[killer.index].kills += 1;
-          console.log(metrics);
         }
       }
       if (player) {
@@ -416,7 +419,7 @@ export function newParser() {
 
   function addGameStep(
     step: Partial<
-      Pick<GameStep, "letters" | "owners" | "metrics" | "bombedIndexes">
+      Pick<GameStep, "letters" | "owners" | "metrics" | "bombedSquares">
     >
   ) {
     // If we don't have any real steps yet
@@ -435,7 +438,7 @@ export function newParser() {
       ...last,
       player,
       hot,
-      bombedIndexes: [],
+      bombedSquares: [],
       ...step,
     });
 

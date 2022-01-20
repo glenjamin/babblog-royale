@@ -21,7 +21,7 @@ export default function GameGrid({
           <tr key={row}>
             {range.map((_, col) => {
               const index = row * size + col;
-              const { bombedIndexes } = state;
+              const { bombedSquares } = state;
               const letter = state.letters[index];
               const owner = state.owners[index];
               const hot = state.hot[index];
@@ -37,7 +37,7 @@ export default function GameGrid({
                         owner !== undefined ? game.players[owner] : undefined
                       }
                       isSelected={selectedPlayer === owner}
-                      isBombed={bombedIndexes.includes(index)}
+                      isBombed={!!bombedSquares[index]}
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />

@@ -92,6 +92,7 @@ export interface PlayerMetrics {
 export type GameStep = {
   letters: SparseArray<Letter>;
   owners: SparseArray<PlayerIndex>;
+  bombedSquares: SparseArray<boolean>;
   player: {
     letters: Array<Letter>;
     rackSize: number;
@@ -104,7 +105,6 @@ export type GameStep = {
   };
   hot: SparseArray<HotZone>;
   metrics: Array<PlayerMetrics>;
-  bombedIndexes: Array<number>;
 };
 
 export type Game = {

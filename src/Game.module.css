@@ -82,17 +82,9 @@
 }
 
 @keyframes exploding {
-  from {
-  }
-
-  12% {
+  15% {
     background-color: red;
-    transform: scale(3);
-    filter: drop-shadow(0 0 32px red);
-  }
-
-  to {
-    /* background-color: auto;
-    transform: auto; */
+    transform: scale(1.5);
+    filter: drop-shadow(0 0 16px red);
   }
 }
