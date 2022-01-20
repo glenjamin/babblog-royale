@@ -1,4 +1,4 @@
-import React from "react";
+import { useMemo } from "react";
 
 import Button from "react-bootstrap/Button";
 
@@ -12,20 +12,30 @@ interface WordsProps {
       words: string[];
     };
   }>;
+  currentStep: number;
   stepTo: (step: number) => void;
 }
 
-function Words({ timeline, stepTo }: WordsProps): JSX.Element {
-  const relevant = timeline
-    .map(({ player }, i) => [i, player.words.sort(wordLength)] as const)
-    .filter(([i, words]) => words.length);
+function Words({ timeline, currentStep, stepTo }: WordsProps): JSX.Element {
+  const relevant = useMemo(
+    () =>
+      timeline
+        .map(({ player }, i) => [i, player.words.sort(wordLength)] as const)
+        .filter(([, words]) => words.length),
+    [timeline]
+  );
   return (
     <ul
       className="list-unstyled"
       style={{ overflowY: "auto", maxHeight: approxGridHeight }}
     >
       {relevant.map(([i, words]) => (
-        <li key={i} value={i + 1}>
+        <li
+          key={i}
+          value={i + 1}
+          className={i === currentStep ? "bg-primary" : undefined}
+          style={{ "--bs-bg-opacity": ".3" } as React.CSSProperties}
+        >
           <Button
             className="p-0 align-baseline link-secondary"
             variant="link"
@@ -53,4 +63,4 @@ function wordLength(a: string, b: string): number {
   return b.length - a.length;
 }
 
-export default React.memo(Words);
+export default Words;

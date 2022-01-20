@@ -79,7 +79,11 @@ function App() {
               </Tab>
               <Tab eventKey="words" title="Words">
                 <Stack className="p-2">
-                  <Words timeline={game.timeline} stepTo={actions.chooseStep} />
+                  <Words
+                    timeline={game.timeline}
+                    currentStep={gameStep}
+                    stepTo={actions.chooseStep}
+                  />
                 </Stack>
               </Tab>
             </Tabs>
