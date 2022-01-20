@@ -33,8 +33,7 @@ function Words({ timeline, currentStep, stepTo }: WordsProps): JSX.Element {
         <li
           key={i}
           value={i + 1}
-          className={i === currentStep ? "bg-primary" : undefined}
-          style={{ "--bs-bg-opacity": ".3" } as React.CSSProperties}
+          className={i === currentStep ? "bg-primary bg-opacity-25" : undefined}
         >
           <Button
             className="p-0 align-baseline link-secondary"
