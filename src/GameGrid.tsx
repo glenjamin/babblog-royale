@@ -21,10 +21,10 @@ export default function GameGrid({
           <tr key={row}>
             {range.map((_, col) => {
               const index = row * size + col;
-              const { bombedSquares } = state;
               const letter = state.letters[index];
               const owner = state.owners[index];
               const hot = state.hot[index];
+              const bombed = state.bombed[index];
               const bonus = game.board.base[index];
 
               return (
@@ -37,7 +37,7 @@ export default function GameGrid({
                         owner !== undefined ? game.players[owner] : undefined
                       }
                       isSelected={selectedPlayer === owner}
-                      isBombed={!!bombedSquares[index]}
+                      isBombed={bombed}
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />
@@ -55,7 +55,7 @@ export default function GameGrid({
 }
 
 interface GasOverlayProps {
-  state: HotZone | void;
+  state: HotZone | undefined;
 }
 function GasOverlay({ state }: GasOverlayProps): JSX.Element | null {
   return state ? <div className={styles[state]}></div> : null;

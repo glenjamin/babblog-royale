@@ -57,7 +57,7 @@ const placeholderGame: Game = {
         points: 801,
       },
       metrics: emptyMetrics,
-      bombedSquares: [],
+      bombed: [],
     },
   ],
   kills: [],
