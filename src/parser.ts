@@ -245,13 +245,23 @@ export function newParser() {
         }
       });
 
+      const timeline = game.timeline;
       const lastMetrics: GameStep["metrics"] =
-        game.timeline[game.timeline.length - 1].metrics;
+        timeline[timeline.length - 1].metrics;
       const metrics = lastMetrics.map((m) => ({ ...m }));
       playerScores.forEach(({ socketID, score }) => {
         const index = findPlayerIndexBySocketID(socketID);
         metrics[index].score = score;
       });
+
+      // Have we noted a kill for the step we're about to add?
+      const lastKill = game.kills[game.kills.length - 1];
+      if (lastKill && timeline.length === lastKill.step) {
+        // If it was killed by a player, up their kill count
+        if (lastKill.type === "word") {
+          metrics[lastKill.by].kills += 1;
+        }
+      }
 
       addGameStep({ letters, owners, metrics });
     },
@@ -349,24 +359,20 @@ export function newParser() {
     NewPlayerDeath({ playerName, playerKilledBy: by, killedByWord }) {
       const step = game.timeline.length;
       const player = game.players.find((p) => p.name === playerName);
+      if (!player) return;
+
+      player.killedStep = step;
       if (by === HOT_ZONE) {
-        game.kills.push({ type: "hot", player: playerName, step });
+        game.kills.push({ type: "hot", player: player.index, step });
       } else {
+        const killer = game.players.find((p) => p.name === by)!;
         game.kills.push({
           type: "word",
-          player: playerName,
-          by,
+          player: player.index,
+          by: killer.index,
           word: killedByWord,
           step,
         });
-        const killer = game.players.find((p) => p.name === by);
-        if (killer) {
-          const { metrics } = game.timeline[game.timeline.length - 1];
-          metrics[killer.index].kills += 1;
-        }
-      }
-      if (player) {
-        player.killedStep = step;
       }
     },
 

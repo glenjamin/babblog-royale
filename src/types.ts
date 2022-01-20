@@ -36,7 +36,7 @@ export type PlayerDetails = {
 };
 
 interface KillBase {
-  player: PlayerName;
+  player: PlayerIndex;
   step: number;
 }
 interface HotZoneKill extends KillBase {
@@ -44,7 +44,7 @@ interface HotZoneKill extends KillBase {
 }
 interface WordKill extends KillBase {
   type: "word";
-  by: PlayerName;
+  by: PlayerIndex;
   word: string;
 }
 
