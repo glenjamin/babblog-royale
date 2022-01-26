@@ -2,6 +2,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Pagination from "react-bootstrap/Pagination";
+import ScreenGrabber from "./ScreenGrabber";
 
 interface GameStepperProps {
   step: number;
@@ -52,6 +53,11 @@ function GameStepper(props: GameStepperProps): JSX.Element {
               title="My Next (down)"
             />
           </Pagination>
+          <ScreenGrabber
+            stepTo={stepTo}
+            stepForwards={stepForwards}
+            stepMeForwards={stepMeForwards}
+          />
         </Col>
       </Row>
       <Row className="justify-content-sm-center">
