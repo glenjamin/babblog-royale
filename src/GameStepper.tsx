@@ -27,7 +27,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
     <>
       <Row className="justify-content-sm-center">
         <Col sm="auto">
-          <Pagination>
+          <Pagination className="mb-1">
             <Pagination.First
               disabled={step === 0}
               onClick={stepMeBack}
@@ -53,21 +53,25 @@ function GameStepper(props: GameStepperProps): JSX.Element {
               title="My Next (down)"
             />
           </Pagination>
-          <ScreenGrabber
-            max={max}
-            stepTo={stepTo}
-            stepForwards={stepForwards}
-            stepMeForwards={stepMeForwards}
-          />
         </Col>
       </Row>
-      <Row className="justify-content-sm-center">
+      <Row className="justify-content-sm-center mb-2 border-bottom">
         <Col sm="auto">
           <Form.Range
             min="0"
             max={max}
             value={step}
             onChange={(e) => stepTo(Number(e.target.value))}
+          />
+        </Col>
+      </Row>
+      <Row className="justify-content-sm-center pb-2 border-bottom">
+        <Col sm="auto">
+          <ScreenGrabber
+            max={max}
+            stepTo={stepTo}
+            stepForwards={stepForwards}
+            stepMeForwards={stepMeForwards}
           />
         </Col>
       </Row>
