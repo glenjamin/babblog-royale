@@ -9,6 +9,7 @@ type State = {
   selectedPlayer: number | null; // index into players
   showImportDialog: boolean;
   showHotkeyHelp: boolean;
+  isRecording: boolean;
 };
 
 const initialState: State = {
@@ -18,6 +19,7 @@ const initialState: State = {
   selectedPlayer: null,
   showImportDialog: false,
   showHotkeyHelp: false,
+  isRecording: false,
 };
 
 const creators = {
@@ -33,6 +35,7 @@ const creators = {
   stepMeBack: () => {},
   stepMeForwards: () => {},
   selectPlayer: (player: number | null) => ({ player }),
+  setIsRecording: (isRecording: boolean) => ({ isRecording }),
 };
 
 const handlers: Handlers = {
@@ -99,6 +102,9 @@ const handlers: Handlers = {
   },
   selectPlayer(state, { player }) {
     return update(state, { selectedPlayer: player });
+  },
+  setIsRecording(state, { isRecording }) {
+    return update(state, { isRecording });
   },
 };
 

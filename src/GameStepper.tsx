@@ -2,7 +2,6 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Form from "react-bootstrap/Form";
 import Pagination from "react-bootstrap/Pagination";
-import ScreenGrabber from "./ScreenGrabber";
 
 interface GameStepperProps {
   step: number;
@@ -55,23 +54,13 @@ function GameStepper(props: GameStepperProps): JSX.Element {
           </Pagination>
         </Col>
       </Row>
-      <Row className="justify-content-sm-center mb-2 border-bottom">
+      <Row className="justify-content-sm-center border-bottom">
         <Col sm="auto">
           <Form.Range
             min="0"
             max={max}
             value={step}
             onChange={(e) => stepTo(Number(e.target.value))}
-          />
-        </Col>
-      </Row>
-      <Row className="justify-content-sm-center pb-2 border-bottom">
-        <Col sm="auto">
-          <ScreenGrabber
-            max={max}
-            stepTo={stepTo}
-            stepForwards={stepForwards}
-            stepMeForwards={stepMeForwards}
           />
         </Col>
       </Row>

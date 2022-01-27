@@ -15,6 +15,7 @@ import PlayerList from "./PlayerList";
 import Words from "./Words";
 
 import useAppReducer from "./reducer";
+import ScreenGrabber from "./ScreenGrabber";
 
 function App() {
   const [state, actions] = useAppReducer();
@@ -25,6 +26,7 @@ function App() {
     selectedPlayer,
     showImportDialog,
     showHotkeyHelp,
+    isRecording,
   } = state;
 
   return (
@@ -65,6 +67,17 @@ function App() {
                     stepTo={actions.chooseStep}
                     stepMeForwards={actions.stepMeForwards}
                   />
+                  {false && (
+                    <ScreenGrabber
+                      step={gameStep}
+                      max={game.timeline.length - 1}
+                      stepForwards={actions.stepForwards}
+                      stepTo={actions.chooseStep}
+                      stepMeForwards={actions.stepMeForwards}
+                      isRecording={isRecording}
+                      setIsRecording={actions.setIsRecording}
+                    />
+                  )}
                   <PlayerState
                     levels={game.levels}
                     {...game.timeline[gameStep].player}

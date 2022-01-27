@@ -1,23 +1,29 @@
 import { useCallback, useState } from "react";
 import takeScreenshot from "./utils/take-screenshot";
 import GIF from "gif.js";
-import { Button, Container, Form, InputGroup, Col, Row } from "react-bootstrap";
+import { Button, Form, InputGroup, Col, Row } from "react-bootstrap";
 
 interface ScreenGrabberProps {
+  step: number;
   max: number;
   stepTo: (step: number) => void;
   stepForwards: () => void;
   stepMeForwards: () => void;
+  isRecording: boolean;
+  setIsRecording: (isRecording: boolean) => void;
 }
-
-const ScreenGrabber = ({
+const ScreenGrabberControls = ({
+  step,
   max,
   stepTo,
   stepForwards,
   stepMeForwards,
+  isRecording,
+  setIsRecording,
 }: ScreenGrabberProps) => {
   const [startStep, setStartStep] = useState("1");
-  const [endStep, setEndStep] = useState("5");
+  const [endStep, setEndStep] = useState("1");
+  const [mine, setMine] = useState(false);
 
   const onBlurStart = useCallback(() => {
     const start = Number(startStep);
@@ -42,30 +48,40 @@ const ScreenGrabber = ({
   }, [startStep, endStep, max]);
 
   const onClickRecord = useCallback(async () => {
+    setIsRecording(true);
     const start = Number(startStep) - 1;
     const end = Number(endStep) - 1;
-    if (end < start) return;
     stepTo(start);
     const gif = new GIF({
       workers: 2,
       quality: 9,
       workerScript: `${process.env.PUBLIC_URL}/gif.worker.js`,
     });
-    for (let i = start; i <= end; i++) {
+    const numSteps = mine ? 10 : end - start;
+    for (let i = 0; i <= numSteps; i++) {
       const canvas = await takeScreenshot();
-      // console.log(canvas.toDataURL());;
       gif.addFrame(canvas);
-      stepForwards();
+      (mine ? stepMeForwards : stepForwards)();
     }
     gif.on("finished", (blob) => {
       console.log("🚀 / gif.on / blob", blob);
       window.open(URL.createObjectURL(blob));
+      setIsRecording(false);
     });
     gif.render();
-  }, [startStep, endStep, stepTo, stepForwards]);
+  }, [
+    step,
+    startStep,
+    endStep,
+    stepTo,
+    stepForwards,
+    stepMeForwards,
+    mine,
+    setIsRecording,
+  ]);
   return (
     <Form>
-      <Row className="justify-content-sm-center">
+      <Row className="justify-content-sm-center align-items-center">
         <Col sm="3">
           <InputGroup>
             <InputGroup.Text>Start</InputGroup.Text>
@@ -73,6 +89,7 @@ const ScreenGrabber = ({
               type="number"
               placeholder="0"
               value={startStep}
+              disabled={isRecording}
               onChange={(e) => setStartStep(e.target.value)}
               onBlur={onBlurStart}
             />
@@ -85,16 +102,56 @@ const ScreenGrabber = ({
               type="number"
               placeholder="0"
               value={endStep}
+              disabled={isRecording}
               onChange={(e) => setEndStep(e.target.value)}
               onBlur={onBlurEnd}
             />
           </InputGroup>
         </Col>
-        <Col sm="3">
-          <Button onClick={onClickRecord}>Record GIF</Button>
+        <Col sm="auto">
+          <Form.Group controlId="formBasicCheckbox">
+            <Form.Check
+              type="checkbox"
+              value="mine"
+              disabled={isRecording}
+              onChange={(e) => setMine(e.target.checked)}
+              label="Only my plays"
+            />
+          </Form.Group>
+        </Col>
+        <Col sm="auto">
+          <Button onClick={onClickRecord} disabled={isRecording}>
+            {isRecording ? "Recording..." : "Record GIF"}
+          </Button>
         </Col>
       </Row>
     </Form>
+  );
+};
+
+const ScreenGrabber = ({
+  step,
+  max,
+  stepTo,
+  stepForwards,
+  stepMeForwards,
+  isRecording,
+  setIsRecording,
+}: ScreenGrabberProps) => {
+  return (
+    <Row className="justify-content-sm-center pb-2 border-bottom">
+      <Col sm="auto">
+        <ScreenGrabberControls
+          step={step}
+          max={max}
+          stepTo={stepTo}
+          stepForwards={stepForwards}
+          stepMeForwards={stepMeForwards}
+          isRecording={isRecording}
+          setIsRecording={setIsRecording}
+        />
+      </Col>
+    </Row>
   );
 };
 
