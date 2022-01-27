@@ -5,5 +5,5 @@
     "checkJs": true,
     "plugins": [{ "name": "typescript-plugin-css-modules" }]
   },
-  "exclude": ["build"]
+  "exclude": ["build", "public/gif.worker.js"]
 }

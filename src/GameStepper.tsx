@@ -54,6 +54,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
             />
           </Pagination>
           <ScreenGrabber
+            max={max}
             stepTo={stepTo}
             stepForwards={stepForwards}
             stepMeForwards={stepMeForwards}
