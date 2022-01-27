@@ -67,7 +67,7 @@ function App() {
                     stepTo={actions.chooseStep}
                     stepMeForwards={actions.stepMeForwards}
                   />
-                  {false && (
+                  {process.env.NODE_ENV === "development" && (
                     <ScreenGrabber
                       step={gameStep}
                       max={game.timeline.length - 1}

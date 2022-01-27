@@ -64,13 +64,11 @@ const ScreenGrabberControls = ({
       (mine ? stepMeForwards : stepForwards)();
     }
     gif.on("finished", (blob) => {
-      console.log("🚀 / gif.on / blob", blob);
       window.open(URL.createObjectURL(blob));
       setIsRecording(false);
     });
     gif.render();
   }, [
-    step,
     startStep,
     endStep,
     stepTo,
@@ -81,7 +79,7 @@ const ScreenGrabberControls = ({
   ]);
   return (
     <Form>
-      <Row className="justify-content-sm-center align-items-center">
+      <Row className="justify-content-sm-center align-items-center pt-2">
         <Col sm="3">
           <InputGroup>
             <InputGroup.Text>Start</InputGroup.Text>
