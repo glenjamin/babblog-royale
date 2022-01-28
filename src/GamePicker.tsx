@@ -23,7 +23,7 @@ function GamePicker({ games, activeID, onPick }: GamePickerProps): JSX.Element {
         const delta = Math.round(MMR - oldMMR);
         return (
           <option key={index} value={String(game.id)}>
-            Game #{id}: Position {position} to MRR {Math.round(MMR)} (
+            Game #{id}: Position {position} to MMR {Math.round(MMR)} (
             {delta >= 0 && "+"}
             {delta})
           </option>
