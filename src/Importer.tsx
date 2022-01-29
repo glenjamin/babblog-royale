@@ -35,22 +35,8 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
   async function parseFile(file: File) {
     setLoading(true);
 
-    let blobs: Array<Blob> = [];
-    let games: Array<Game> = [];
-
-    let blob: Blob = file;
-    if (file.name.endsWith(".zip")) {
-      const reader = new zip.ZipReader(new zip.BlobReader(blob));
-      const entries = await reader.getEntries();
-      for (let entry of entries) {
-        blobs.push(await entry.getData!(new zip.BlobWriter()));
-      }
-    } else {
-      blobs = [file];
-    }
-
-    for (let blob of blobs) {
-      const parser = newParser();
+    const parser = newParser();
+    const parseBlob = async (blob: Blob) => {
       // The type cast is required because @types/node messes with the DOM type
       // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
       const stream = blob.stream() as any as ReadableStream<Uint8Array>;
@@ -62,11 +48,20 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
         parser.parse(chunk);
         if (done) break;
       }
-      parser.end();
+    };
 
-      games.push(...parser.games());
+    if (file.name.endsWith(".zip")) {
+      const reader = new zip.ZipReader(new zip.BlobReader(file));
+      const entries = await reader.getEntries();
+      for (let entry of entries) {
+        await parseBlob(await entry.getData!(new zip.BlobWriter()));
+      }
+    } else {
+      await parseBlob(file);
     }
 
+    parser.end();
+    const games = parser.games();
     if (games.length === 0) {
       return setError("No games found in this file. Try another file.");
     }
