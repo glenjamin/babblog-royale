@@ -49,7 +49,7 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
       blobs = [file];
     }
 
-    for (let blob of blobs){
+    for (let blob of blobs) {
       const parser = newParser();
       // The type cast is required because @types/node messes with the DOM type
       // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
