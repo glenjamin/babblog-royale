@@ -57,8 +57,9 @@ const ScreenGrabberControls = ({
       quality: 9,
       workerScript: `${process.env.PUBLIC_URL}/gif.worker.js`,
     });
+    // TODO: Get the number of steps when mine = true by checking the timeline
     const numSteps = mine ? 10 : end - start;
-    for (let i = 0; i <= numSteps; i++) {
+    for (let i = 0; i < numSteps; i++) {
       const canvas = await takeScreenshot();
       gif.addFrame(canvas);
       (mine ? stepMeForwards : stepForwards)();

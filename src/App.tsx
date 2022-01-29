@@ -42,7 +42,11 @@ function App() {
         games={games}
         activeGameID={game.id}
       />
-      <Hotkeys showHelp={showHotkeyHelp} {...actions} />
+      <Hotkeys
+        showHelp={showHotkeyHelp}
+        isRecording={isRecording}
+        {...actions}
+      />
       <Container fluid>
         <Row>
           <Col>
@@ -66,6 +70,7 @@ function App() {
                     stepForwards={actions.stepForwards}
                     stepTo={actions.chooseStep}
                     stepMeForwards={actions.stepMeForwards}
+                    disabled={isRecording}
                   />
                   {process.env.NODE_ENV === "development" && (
                     <ScreenGrabber

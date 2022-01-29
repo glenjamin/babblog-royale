@@ -6,6 +6,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 
 interface HotkeyProps {
   showHelp: boolean;
+  isRecording: boolean;
   toggleHotkeyHelp(): void;
   hideHotkeyHelp(): void;
   showImport(): void;
@@ -15,13 +16,21 @@ interface HotkeyProps {
   stepMeForwards(): void;
 }
 
-function Hotkeys({ showHelp, ...actions }: HotkeyProps): JSX.Element {
+function Hotkeys({
+  showHelp,
+  isRecording,
+  ...actions
+}: HotkeyProps): JSX.Element {
   useHotkeys("shift+/,?,h", actions.toggleHotkeyHelp);
   useHotkeys("i", actions.showImport);
-  useHotkeys("left", actions.stepBack);
-  useHotkeys("right", actions.stepForwards);
-  useHotkeys("up", actions.stepMeBack);
-  useHotkeys("down", actions.stepMeForwards);
+  useHotkeys("left", () => !isRecording && actions.stepBack(), [isRecording]);
+  useHotkeys("right", () => !isRecording && actions.stepForwards(), [
+    isRecording,
+  ]);
+  useHotkeys("up", () => !isRecording && actions.stepMeBack(), [isRecording]);
+  useHotkeys("down", () => !isRecording && actions.stepMeForwards(), [
+    isRecording,
+  ]);
 
   return (
     <Modal show={showHelp} onHide={actions.hideHotkeyHelp}>
