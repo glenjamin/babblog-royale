@@ -48,6 +48,7 @@ function App() {
               game={game}
               step={gameStep}
               selectedPlayer={selectedPlayer}
+              selectPlayer={actions.selectPlayer}
             />
           </Col>
           {/* Sidebar */}

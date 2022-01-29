@@ -5,11 +5,13 @@ interface GameGridProps {
   game: Game;
   step: number;
   selectedPlayer: number | null;
+  selectPlayer: (player: number | null) => void;
 }
 export default function GameGrid({
   game,
   step,
   selectedPlayer,
+  selectPlayer,
 }: GameGridProps) {
   const size = game.board.size;
   const range = Array(size).fill(0);
@@ -38,6 +40,7 @@ export default function GameGrid({
                       }
                       isSelected={selectedPlayer === owner}
                       isBombed={bombed}
+                      selectPlayer={selectPlayer}
                     />
                   ) : bonus ? (
                     <BonusCell bonus={bonus} />
@@ -86,16 +89,19 @@ interface LetterProps {
   owner?: PlayerDetails;
   isSelected?: boolean;
   isBombed?: boolean;
+  selectPlayer: (player: number | null) => void;
 }
 export function LetterCell({
   letter,
   owner,
   isSelected = false,
   isBombed = false,
+  selectPlayer,
 }: LetterProps): JSX.Element {
   const colour = owner ? ownerColours[owner.index] : "";
   return (
     <div
+      onClick={() => selectPlayer(isSelected ? null : owner ? owner.index : null)}
       className={`${styles.letter} ${isBombed && styles.explodingTile}`}
       title={owner ? owner.name : undefined}
       style={
