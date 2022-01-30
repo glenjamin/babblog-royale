@@ -21,13 +21,11 @@ function PlayerList({
 }: PlayerListProps): JSX.Element {
   const { metrics } = timeline[currentStep];
   // TODO: Toggle sorting by kills / score / default?
-  const alivePlayers = players.filter(
-    (a) => metrics[a.index].score !== DEAD_SCORE
-  );
-  const deadPlayers = players.filter((a) => !alivePlayers.includes(a));
-  alivePlayers.sort((a, b) => metrics[b.index].score - metrics[a.index].score);
-  deadPlayers.sort((a, b) => (b.killedStep ?? 0) - (a.killedStep ?? 0));
-  const sortedPlayers = [...alivePlayers, ...deadPlayers];
+  const sortedPlayers = [...players].sort((a, b) => {
+    const diff = metrics[b.index].score - metrics[a.index].score;
+    if (diff !== 0) return diff;
+    return (b.killedStep ?? Infinity) - (a.killedStep ?? Infinity);
+  });
   return (
     <ListGroup>
       {sortedPlayers.map((player) => (
