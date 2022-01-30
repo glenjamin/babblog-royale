@@ -121,11 +121,23 @@ const bonusTypeMap = {
   reroll_all: "bonusItem",
   letter_s: "bonusItem",
 } as const;
+interface ContentProps {
+  multiplier: Number;
+  bonusType: string;
+}
+function BonusCellContent({ multiplier, bonusType }: ContentProps) {
+  return (
+    <>
+      {multiplier.toString()}x<br />
+      {bonusType}
+    </>
+  );
+}
 const bonusContentMap = {
-  "2x_word": "2x Wd",
-  "3x_word": "3x Wd",
-  "3x_letter": "3x Lt",
-  "5x_letter": "5x Lt",
+  "2x_word": <BonusCellContent multiplier={2} bonusType={"Wd"} />,
+  "3x_word": <BonusCellContent multiplier={3} bonusType={"Wd"} />,
+  "3x_letter": <BonusCellContent multiplier={3} bonusType={"Lt"} />,
+  "5x_letter": <BonusCellContent multiplier={5} bonusType={"Lt"} />,
   bomb: "💣",
   medkit: "➕",
   reroll_all: "♺",
