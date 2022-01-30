@@ -18,7 +18,7 @@
 
 .bonusMultiplier {
   composes: empty;
-  line-height: 10px;
+  line-height: 12px;
   font-size: 75%;
 }
 
@@ -29,7 +29,7 @@
 
 .bonusLetter {
   composes: bonusMultiplier;
-  color: #9c9;
+  color: #393;
 }
 
 .bonusItem {
