@@ -262,7 +262,6 @@ export function newParser() {
 
       // Has there been any kills we haven't parsed yet?
       for (let kill of game.kills.slice(parsedKillsAmount)) {
-        console.log(game, kill);
         // If it was killed by a player, up their kill count
         if (kill.type === "word") {
           metrics[kill.by].kills += 1;
