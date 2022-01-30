@@ -23,7 +23,7 @@ function PlayerState({
       <Row className="justify-content-sm-center my-3">
         <Col className="d-flex" sm="auto">
           {letters.map((letter, i) => (
-            <LetterCell key={i} letter={letter} selectPlayer={() => {return null}}/>
+            <LetterCell key={i} letter={letter} />
           ))}
           {new Array(rackSize - letters.length).fill(0).map((_, i) => (
             <EmptyCell key={i} />
