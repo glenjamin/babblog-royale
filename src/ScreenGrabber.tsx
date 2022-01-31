@@ -21,36 +21,48 @@ const ScreenGrabberControls = ({
   isRecording,
   setIsRecording,
 }: ScreenGrabberProps) => {
-  const [startStep, setStartStep] = useState("1");
-  const [endStep, setEndStep] = useState("1");
-  const [mine, setMine] = useState(false);
+  const [startStepValue, setStartStepValue] = useState("1");
+  const [numMovesValue, setNumMovesValue] = useState("1");
+  const [myMovesOnly, setMyMovesOnly] = useState(false);
 
   const onBlurStart = useCallback(() => {
-    const start = Number(startStep);
+    const start = Number(startStepValue);
+    const numMoves = Number(numMovesValue);
     if (isNaN(start)) {
-      setStartStep(endStep);
-    } else if (start > Number(endStep)) {
-      setEndStep(startStep);
-    } else if (start < 0) {
-      setStartStep("0");
+      setStartStepValue("1");
+      return;
+    } else if (start > max) {
+      setStartStepValue(String(max));
+      setNumMovesValue("1");
+      return;
+    } else if (start + numMoves > max) {
+      setNumMovesValue(String(max - start + 1));
+    } else if (start < 1) {
+      setStartStepValue("1");
+      return;
     }
-  }, [startStep, endStep]);
+    setStartStepValue(String(Math.floor(start)));
+  }, [startStepValue, numMovesValue, max]);
 
-  const onBlurEnd = useCallback(() => {
-    const end = Number(endStep);
-    if (isNaN(end)) {
-      setEndStep(startStep);
-    } else if (end < Number(startStep)) {
-      setStartStep(endStep);
-    } else if (end > max) {
-      setEndStep(String(max + 1));
+  const onBlurNumMoves = useCallback(() => {
+    const start = Number(startStepValue);
+    const numMoves = Number(numMovesValue);
+    if (isNaN(numMoves)) {
+      setNumMovesValue("1");
+    } else if (numMoves < 1) {
+      setNumMovesValue("1");
+    } else if (start + numMoves > max) {
+      // TODO: Make this work even when myMovesOnly is set to true
+      setNumMovesValue(String(max - start + 1));
+    } else {
+      setNumMovesValue(String(Math.floor(numMoves)));
     }
-  }, [startStep, endStep, max]);
+  }, [startStepValue, numMovesValue, max]);
 
   const onClickRecord = useCallback(async () => {
     setIsRecording(true);
-    const start = Number(startStep) - 1;
-    const end = Number(endStep) - 1;
+    const start = Number(startStepValue) - 1;
+    const numMoves = Number(numMovesValue);
     stepTo(start);
     const gif = new GIF({
       workers: 2,
@@ -58,11 +70,10 @@ const ScreenGrabberControls = ({
       workerScript: `${process.env.PUBLIC_URL}/gif.worker.js`,
     });
     // TODO: Get the number of steps when mine = true by checking the timeline
-    const numSteps = mine ? 10 : end - start;
-    for (let i = 0; i < numSteps; i++) {
+    for (let i = 0; i < numMoves; i++) {
       const canvas = await takeScreenshot();
       gif.addFrame(canvas);
-      (mine ? stepMeForwards : stepForwards)();
+      (myMovesOnly ? stepMeForwards : stepForwards)();
     }
     gif.on("finished", (blob) => {
       window.open(URL.createObjectURL(blob));
@@ -70,12 +81,12 @@ const ScreenGrabberControls = ({
     });
     gif.render();
   }, [
-    startStep,
-    endStep,
+    startStepValue,
+    numMovesValue,
     stepTo,
     stepForwards,
     stepMeForwards,
-    mine,
+    myMovesOnly,
     setIsRecording,
   ]);
   return (
@@ -87,23 +98,23 @@ const ScreenGrabberControls = ({
             <Form.Control
               type="number"
               placeholder="0"
-              value={startStep}
+              value={startStepValue}
               disabled={isRecording}
-              onChange={(e) => setStartStep(e.target.value)}
+              onChange={(e) => setStartStepValue(e.target.value)}
               onBlur={onBlurStart}
             />
           </InputGroup>
         </Col>
         <Col sm="3">
           <InputGroup>
-            <InputGroup.Text>End</InputGroup.Text>
+            <InputGroup.Text># Moves</InputGroup.Text>
             <Form.Control
               type="number"
               placeholder="0"
-              value={endStep}
+              value={numMovesValue}
               disabled={isRecording}
-              onChange={(e) => setEndStep(e.target.value)}
-              onBlur={onBlurEnd}
+              onChange={(e) => setNumMovesValue(e.target.value)}
+              onBlur={onBlurNumMoves}
             />
           </InputGroup>
         </Col>
@@ -113,7 +124,7 @@ const ScreenGrabberControls = ({
               type="checkbox"
               value="mine"
               disabled={isRecording}
-              onChange={(e) => setMine(e.target.checked)}
+              onChange={(e) => setMyMovesOnly(e.target.checked)}
               label="Only my plays"
             />
           </Form.Group>
