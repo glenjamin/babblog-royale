@@ -72,17 +72,6 @@ function App() {
                     stepMeForwards={actions.stepMeForwards}
                     disabled={isRecording}
                   />
-                  {process.env.NODE_ENV === "development" && (
-                    <ScreenGrabber
-                      step={gameStep}
-                      max={game.timeline.length - 1}
-                      stepForwards={actions.stepForwards}
-                      stepTo={actions.chooseStep}
-                      stepMeForwards={actions.stepMeForwards}
-                      isRecording={isRecording}
-                      setIsRecording={actions.setIsRecording}
-                    />
-                  )}
                   <PlayerState
                     levels={game.levels}
                     {...game.timeline[gameStep].player}
@@ -104,6 +93,17 @@ function App() {
                     stepTo={actions.chooseStep}
                   />
                 </Stack>
+              </Tab>
+              <Tab eventKey="export" title="Export GIF (beta)">
+                <ScreenGrabber
+                  step={gameStep}
+                  max={game.timeline.length - 1}
+                  stepForwards={actions.stepForwards}
+                  stepTo={actions.chooseStep}
+                  stepMeForwards={actions.stepMeForwards}
+                  isRecording={isRecording}
+                  setIsRecording={actions.setIsRecording}
+                />
               </Tab>
             </Tabs>
           </Col>

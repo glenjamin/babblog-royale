@@ -3,6 +3,9 @@ import takeScreenshot from "./utils/take-screenshot";
 import GIF from "gif.js";
 import { Button, Form, InputGroup, Col, Row } from "react-bootstrap";
 
+const GIF_DELAY = 500;
+const GIF_LAST_FRAME_DELAY = 1000;
+
 interface ScreenGrabberProps {
   step: number;
   max: number;
@@ -69,12 +72,20 @@ const ScreenGrabberControls = ({
       quality: 9,
       workerScript: `${process.env.PUBLIC_URL}/gif.worker.js`,
     });
+    const takeStep = myMovesOnly ? stepMeForwards : stepForwards;
     // TODO: Get the number of steps when mine = true by checking the timeline
     for (let i = 0; i < numMoves; i++) {
       const canvas = await takeScreenshot();
-      gif.addFrame(canvas);
-      (myMovesOnly ? stepMeForwards : stepForwards)();
+      gif.addFrame(canvas, {
+        delay: GIF_DELAY,
+      });
+      takeStep();
     }
+    const canvas = await takeScreenshot();
+    gif.addFrame(canvas, {
+      delay: GIF_LAST_FRAME_DELAY,
+    });
+
     gif.on("finished", (blob) => {
       window.open(URL.createObjectURL(blob));
       setIsRecording(false);
@@ -91,6 +102,12 @@ const ScreenGrabberControls = ({
   ]);
   return (
     <Form>
+      <Row className="justify-content-center">
+        Note: This feature is in development and might be buggy!
+      </Row>
+      <Row className="justify-content-center">
+        After exporting, right click &gt; save image to save your GIF.
+      </Row>
       <Row className="justify-content-sm-center align-items-center pt-2">
         <Col sm="3">
           <InputGroup>
