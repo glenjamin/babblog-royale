@@ -101,13 +101,17 @@ export function LetterCell({
   const colour = owner ? ownerColours[owner.index] : "";
   return (
     <div
-      onClick={selectPlayer !== undefined ? () => {
-        let select = null;
-        if(!isSelected && owner) {
-          select = owner.index;
-        } 
-        selectPlayer(select);
-      } : undefined }
+      onClick={
+        selectPlayer !== undefined
+          ? () => {
+              let select = null;
+              if (!isSelected && owner) {
+                select = owner.index;
+              }
+              selectPlayer(select);
+            }
+          : undefined
+      }
       className={`${styles.letter} ${isBombed && styles.explodingTile}`}
       title={owner ? owner.name : undefined}
       style={
