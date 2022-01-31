@@ -64,7 +64,11 @@ function PlayerListItem({
       action
       active={isSelected}
     >
-      <LetterCell letter="a" owner={isDead ? undefined : player} />
+      <LetterCell
+        letter="a"
+        owner={isDead ? undefined : player}
+        selectPlayer={selectPlayer}
+      />
       <Metrics metrics={metrics} />
       <div className="ms-2">
         {player.name} {killIndicator}
