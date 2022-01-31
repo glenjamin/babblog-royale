@@ -102,14 +102,8 @@ export function LetterCell({
   return (
     <div
       onClick={
-        selectPlayer !== undefined
-          ? () => {
-              let select = null;
-              if (!isSelected && owner) {
-                select = owner.index;
-              }
-              selectPlayer(select);
-            }
+        selectPlayer
+          ? () => selectPlayer(!isSelected && owner ? owner.index : null)
           : undefined
       }
       className={`${styles.letter} ${isBombed && styles.explodingTile}`}
