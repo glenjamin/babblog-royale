@@ -35,33 +35,35 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
   async function parseFile(file: File) {
     setLoading(true);
 
-    let blob: Blob = file;
-    if (file.name.endsWith(".zip")) {
-      const reader = new zip.ZipReader(new zip.BlobReader(blob));
-      const entries = await reader.getEntries();
-      if (entries.length !== 1) {
-        return setError("Zip files should contain only one log file.");
-      }
-      blob = await entries[0].getData!(new zip.BlobWriter());
-    }
-
     const parser = newParser();
-    // The type cast is required because @types/node messes with the DOM type
-    // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
-    const stream = blob.stream() as any as ReadableStream<Uint8Array>;
-    const reader = stream.getReader();
-    const utf8Decoder = new TextDecoder("utf-8");
-    while (true) {
-      let { value, done } = await reader.read();
-      const chunk = utf8Decoder.decode(value, { stream: !done });
-      parser.parse(chunk);
-      if (done) break;
-    }
-    parser.end();
+    const parseBlob = async (blob: Blob) => {
+      // The type cast is required because @types/node messes with the DOM type
+      // See https://github.com/DefinitelyTyped/DefinitelyTyped/discussions/58079
+      const stream = blob.stream() as any as ReadableStream<Uint8Array>;
+      const reader = stream.getReader();
+      const utf8Decoder = new TextDecoder("utf-8");
+      while (true) {
+        let { value, done } = await reader.read();
+        const chunk = utf8Decoder.decode(value, { stream: !done });
+        parser.parse(chunk);
+        if (done) break;
+      }
+    };
 
+    if (file.name.endsWith(".zip")) {
+      const reader = new zip.ZipReader(new zip.BlobReader(file));
+      const entries = await reader.getEntries();
+      for (let entry of entries) {
+        await parseBlob(await entry.getData!(new zip.BlobWriter()));
+      }
+    } else {
+      await parseBlob(file);
+    }
+
+    parser.end();
     const games = parser.games();
     if (games.length === 0) {
-      return setError("No games found in log file. Try another file.");
+      return setError("No games found in this file. Try another file.");
     }
 
     setTimeout(() => {
@@ -114,8 +116,8 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
               </p>
               <p>
                 If you want to keep a lot of files and save some space, you can
-                compress them into <code>.zip</code> files, each containing a
-                single log - and these will also be accepted.
+                compress them into <code>.zip</code> files and these will also
+                be accepted.
               </p>
               <p>
                 The file will not be uploaded to any server, all processing
