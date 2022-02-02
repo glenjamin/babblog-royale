@@ -52,7 +52,9 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
 
     if (file.name.endsWith(".zip")) {
       const reader = new zip.ZipReader(new zip.BlobReader(file));
-      const entries = await reader.getEntries();
+      const entries = Array.from(await reader.getEntries()).sort(
+        (a, b) => a.rawLastModDate - b.rawLastModDate
+      );
       for (let entry of entries) {
         await parseBlob(await entry.getData!(new zip.BlobWriter()));
       }
