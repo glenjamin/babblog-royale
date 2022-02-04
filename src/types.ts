@@ -82,7 +82,7 @@ export type Item = "bomb" | "reroll_all" | "medkit" | "letter_s";
 
 export type Bonus = Item | "2x_word" | "3x_word" | "3x_letter" | "5x_letter";
 
-type SparseArray<T> = Array<T | undefined>;
+export type SparseArray<T> = Array<T | undefined>;
 
 export interface PlayerMetrics {
   score: number;
