@@ -66,6 +66,7 @@ export function sliceToRegex(
       forced += currentLetter;
     }
   }
+  if (reachedFirst) clearForced();
   clearFree(true);
   return new RegExp(`^${rv}$`);
 }
