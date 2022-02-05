@@ -25,7 +25,7 @@ export type SimulationResult = {
 
 export type NestedPlay = {
   thisPlay: Play;
-  children: NestedPlay[];
+  children: { [key: string]: NestedPlay | Promise<NestedPlay> };
 };
 
 export class Play {
@@ -130,12 +130,16 @@ export class Play {
     return words.includes(this.word);
   }
 
+  lastIsValid: boolean | null = null;
+
   /**
    * Returns whether this word can be placed on the board
    */
   isValidToPlay(): SimulationResult {
-    if (!this.isInDictionary())
+    if (!this.isInDictionary()) {
+      this.lastIsValid = false;
       return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
+    }
 
     let rackCopy = [...this.playerRackBefore];
 
@@ -145,6 +149,7 @@ export class Play {
     for (let i = this.startIndex; i < this.endIndex; i++) {
       // check if the spot is free or if it is the same letter
       if (s[i] !== undefined && s[i] !== this.word[i - this.startIndex]) {
+        this.lastIsValid = false;
         return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
       } else if (s[i] === undefined) {
         needsPlacementIndices.push(i);
@@ -155,6 +160,7 @@ export class Play {
         if (letterIndex !== -1) {
           rackCopy.splice(letterIndex, 1);
         } else {
+          this.lastIsValid = false;
           return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
         }
       }
@@ -184,6 +190,7 @@ export class Play {
         null
       );
       if (!testWord.isInDictionary()) {
+        this.lastIsValid = false;
         return {
           isValid: false,
           rackAfterPlay: [...rackCopy],
@@ -191,6 +198,8 @@ export class Play {
         };
       }
     }
+
+    this.lastIsValid = true;
     return {
       isValid: true,
       rackAfterPlay: [...rackCopy],
@@ -262,7 +271,7 @@ export class Play {
           } catch (e) {
             continue;
           }
-          if (playObj.isValidToPlay().isValid) {
+          if (playObj.lastIsValid === true) {
             rv.push({
               play: playObj,
               remainingLetters: playObj.playerRackAfter,
@@ -272,6 +281,19 @@ export class Play {
       }
     }
     return rv;
+  }
+
+  getReversed(): Play {
+    if (this.word.length !== 1) Error("Can only reverse single letter words");
+    return new Play(
+      this.letters,
+      this.boardSize,
+      [...this.playerRackAfter],
+      !this.isHorizontal,
+      this.startIndex,
+      this.axisIndex,
+      null
+    );
   }
 }
 
@@ -296,36 +318,49 @@ export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
   );
 }
 
-const MAX_DEPTH = 4;
-
-export function getAllPlaysRecursively(
-  currentPlay: Play,
-  depth = 0
-): NestedPlay {
+export async function getAllPlaysRecursively(
+  currentPlay: Play
+): Promise<NestedPlay> {
   let rv: NestedPlay = {
     thisPlay: currentPlay,
-    children: [],
+    children: {},
   };
-  if (depth >= MAX_DEPTH) return rv;
 
   let playsAcross = currentPlay.findPlaysAcross();
   for (const play of playsAcross) {
     for (const child of play.getExpansionOptions()) {
-      rv.children.push(getAllPlaysRecursively(child.play, depth + 1));
+      let word = child.play.word;
+      while (rv.children[word] !== undefined) {
+        word = word + ".";
+      }
+      rv.children[word] = getAllPlaysRecursively(child.play);
+      // yield to event loop
+      await new Promise((resolve) => setTimeout(resolve));
     }
   }
   return rv;
 }
 
-export function findAllPlays(gameStep: GameStep, boardSize: number) {
+export async function findAllPlays(gameStep: GameStep, boardSize: number) {
   let playerWord = findCurrentlyPlayedWord(gameStep, boardSize);
   let startingPlays = [playerWord];
   for (const option of playerWord.getExpansionOptions()) {
     startingPlays.push(option.play);
   }
-  let rv = [];
+  if (playerWord.word.length === 1) {
+    for (const option of playerWord.getReversed().getExpansionOptions()) {
+      startingPlays.push(option.play);
+    }
+  }
+
+  let rv: NestedPlay = { thisPlay: playerWord, children: {} };
+
   for (const play of startingPlays) {
-    rv.push(getAllPlaysRecursively(play));
+    let word = play.word;
+    while (rv.children[word] !== undefined) {
+      word = word + ".";
+    }
+    rv.children[word] = getAllPlaysRecursively(play);
   }
 
   return rv;
