@@ -230,6 +230,7 @@ export function newParser() {
     SyncNewBoardState({ squaresWithLetters, playerScores }) {
       if (startIndex !== undefined && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
+        getStartingLetters(squaresWithLetters);
       }
 
       const letters: GameStep["letters"] = [];
@@ -473,6 +474,17 @@ export function newParser() {
     game.you.name = game.players[0].name;
   }
 
+  function getStartingLetters(
+    squares: Events["SyncNewBoardState"]["squaresWithLetters"]
+  ) {
+    game.players.forEach((player) => {
+      const startingSquare = squares.find(
+        ({ playerLivingOn }) => playerLivingOn === player.socketID
+      );
+      player.startingLetter = startingSquare?.letter || "a";
+    });
+  }
+
   let buffer = "";
   function handleLine(line: string) {
     if (line[0] !== "[" || line[1] !== '"') return;
@@ -508,12 +520,15 @@ const isGameMalformed = (game: Game) => {
   return game.timeline.length === 0;
 };
 
-function indexPlayers(players: Omit<PlayerDetails, "index" | "killedStep">[]) {
+function indexPlayers(
+  players: Omit<PlayerDetails, "index" | "killedStep" | "startingLetter">[]
+) {
   return players.map(({ name, socketID }, index) => ({
     socketID,
     name,
     index: playerIndex(index),
     killedStep: null,
+    startingLetter: "a" as Letter,
   }));
 }
 
