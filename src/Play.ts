@@ -13,11 +13,11 @@ export type Intention = {
 };
 
 export type ExpansionOption = {
-  word: Word;
+  play: Play;
   remainingLetters: Letter[];
 };
 
-export class Word {
+export class Play {
   private readonly letters: SparseArray<Letter>;
   private readonly boardSize: number;
   readonly isHorizontal: boolean;
@@ -99,9 +99,9 @@ export class Word {
 
   /**
    * Returns whether this word can be placed on the board
-   * @param placedLetters out parameter - letters that are needed to place this word
+   * @param placedLetters out parameter - letters that are needed to play this word
    */
-  isValidForPlacement(placedLetters: Array<Letter> = []) {
+  isValidToPlay(placedLetters: Array<Letter> = []) {
     if (!this.isInDictionary()) return false;
 
     // check if the board is free of other letters
@@ -131,7 +131,7 @@ export class Word {
 
     // check surrounding letters and the words they make up in the simulated board
     for (let i of needsPlacementIndices) {
-      let testWord = new Word(
+      let testWord = new Play(
         simulated,
         this.boardSize,
         !this.isHorizontal, // intentionally reversed
@@ -162,7 +162,7 @@ export class Word {
     playerRack: Array<Letter>
   ): AsyncGenerator<ExpansionOption> {
     // no expansion is also a valid option
-    yield { word: this, remainingLetters: [...playerRack] };
+    yield { play: this, remainingLetters: [...playerRack] };
 
     let re = sliceToRegex(this.mySlice(), this.startIndex, playerRack);
     for (const word of words) {
@@ -171,7 +171,7 @@ export class Word {
         for (const match of Array.from(word.matchAll(wordOnlyRe))) {
           // find start index of the word
           let startIndex = this.startIndex - match.index!;
-          let wordObj = new Word(
+          let wordObj = new Play(
             this.letters,
             this.boardSize,
             this.isHorizontal,
@@ -183,20 +183,20 @@ export class Word {
             }
           );
           let usedLetters: Array<Letter> = [];
-          let validForPlacement = wordObj.isValidForPlacement(usedLetters);
+          let validPlay = wordObj.isValidToPlay(usedLetters);
           let rackCopy = [...playerRack];
           // see if the player actually had used letters in their rack
           for (const letter of usedLetters) {
-            if (!validForPlacement) break;
+            if (!validPlay) break;
             let index = rackCopy.indexOf(letter);
             if (index !== -1) {
               rackCopy.splice(index, 1);
             } else {
-              validForPlacement = false;
+              validPlay = false;
             }
           }
-          if (validForPlacement) {
-            yield { word: wordObj, remainingLetters: rackCopy };
+          if (validPlay) {
+            yield { play: wordObj, remainingLetters: rackCopy };
           }
         }
       }
@@ -204,7 +204,7 @@ export class Word {
   }
 }
 
-export function findPlayerWord(gameStep: GameStep, boardSize: number) {
+export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
   let firstOwner = gameStep.owners.indexOf(0);
   let isHorizontal = gameStep.owners[firstOwner + 1] === 0;
   let axisIndex = Math.floor(firstOwner / boardSize); // y coordinate
@@ -214,7 +214,7 @@ export function findPlayerWord(gameStep: GameStep, boardSize: number) {
     // if the word is vertical, we need to switch axisIndex and middleIndex
     [axisIndex, middleIndex] = [middleIndex, axisIndex];
   }
-  return new Word(
+  return new Play(
     gameStep.letters,
     boardSize,
     isHorizontal,
