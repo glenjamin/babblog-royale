@@ -346,10 +346,12 @@ export async function findAllPlays(gameStep: GameStep, boardSize: number) {
   let startingPlays = [playerWord];
   for (const option of playerWord.getExpansionOptions()) {
     startingPlays.push(option.play);
+    await new Promise((resolve) => setTimeout(resolve));
   }
   if (playerWord.word.length === 1) {
     for (const option of playerWord.getReversed().getExpansionOptions()) {
       startingPlays.push(option.play);
+      await new Promise((resolve) => setTimeout(resolve));
     }
   }
 
