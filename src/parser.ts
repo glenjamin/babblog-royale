@@ -177,6 +177,11 @@ export function newParser() {
    */
   let player: GameStep["player"];
 
+  /**
+   * The amount of kills parsed is kept track of to correctly parse multi kills
+   */
+  let parsedKillsAmount: number;
+
   const handlers: Handlers = {
     ServerLoginConfirmation({ xpLevels }) {
       levels = xpLevels;
@@ -192,6 +197,7 @@ export function newParser() {
       hot = [];
       player = emptyStep.player;
       startIndex = undefined;
+      parsedKillsAmount = 0;
 
       game = {
         id: room,
@@ -255,13 +261,13 @@ export function newParser() {
         metrics[index].score = score;
       });
 
-      // Have we noted a kill for the step we're about to add?
-      const lastKill = game.kills[game.kills.length - 1];
-      if (lastKill && timeline.length === lastKill.step) {
+      // Has there been any kills we haven't parsed yet?
+      for (let kill of game.kills.slice(parsedKillsAmount)) {
         // If it was killed by a player, up their kill count
-        if (lastKill.type === "word") {
-          metrics[lastKill.by].kills += 1;
+        if (kill.type === "word") {
+          metrics[kill.by].kills += 1;
         }
+        parsedKillsAmount++;
       }
 
       addGameStep({ letters, owners, metrics });
