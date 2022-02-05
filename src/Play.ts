@@ -25,7 +25,7 @@ export type SimulationResult = {
 
 export type NestedPlay = {
   thisPlay: Play;
-  children: { [key: string]: NestedPlay | Promise<NestedPlay> };
+  children: { [key: string]: NestedPlay | (() => Promise<NestedPlay>) };
 };
 
 export class Play {
@@ -316,7 +316,9 @@ export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
   );
 }
 
-async function walkGeneratorWhileYielding(generator: Generator<any>) {
+async function walkGeneratorWhileYielding<T>(
+  generator: Generator<T>
+): Promise<T[]> {
   let rv = [];
   while (true) {
     let next = generator.next();
@@ -344,7 +346,10 @@ export async function getAllPlaysRecursively(
       while (rv.children[word] !== undefined) {
         word = word + ".";
       }
-      rv.children[word] = getAllPlaysRecursively(child.play);
+
+      rv.children[word] = () => {
+        return getAllPlaysRecursively(child.play);
+      };
     }
   }
   return rv;
@@ -375,7 +380,9 @@ export async function findAllPlays(gameStep: GameStep, boardSize: number) {
     while (rv.children[word] !== undefined) {
       word = word + ".";
     }
-    rv.children[word] = getAllPlaysRecursively(play);
+    rv.children[word] = () => {
+      return getAllPlaysRecursively(play);
+    };
   }
 
   return rv;
