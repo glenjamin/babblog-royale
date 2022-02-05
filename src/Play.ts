@@ -239,10 +239,9 @@ export class Play {
   /**
    * Returns all the words this word could be expanded into
    */
-  getExpansionOptions(): Array<ExpansionOption> {
+  *getExpansionOptions(): Generator<ExpansionOption> {
     if (this.playerRackAfter.length === 0) return [];
 
-    let rv = [];
     let re = sliceToRegex(
       this.mySlice(),
       this.startIndex,
@@ -272,15 +271,14 @@ export class Play {
             continue;
           }
           if (playObj.lastIsValid === true) {
-            rv.push({
+            yield {
               play: playObj,
               remainingLetters: playObj.playerRackAfter,
-            });
+            };
           }
         }
       }
     }
-    return rv;
   }
 
   getReversed(): Play {
@@ -318,6 +316,17 @@ export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
   );
 }
 
+async function walkGeneratorWhileYielding(generator: Generator<any>) {
+  let rv = [];
+  while (true) {
+    let next = generator.next();
+    if (next.done) break;
+    rv.push(next.value);
+    await new Promise((resolve) => setTimeout(resolve));
+  }
+  return rv;
+}
+
 export async function getAllPlaysRecursively(
   currentPlay: Play
 ): Promise<NestedPlay> {
@@ -328,14 +337,14 @@ export async function getAllPlaysRecursively(
 
   let playsAcross = currentPlay.findPlaysAcross();
   for (const play of playsAcross) {
-    for (const child of play.getExpansionOptions()) {
+    for (const child of await walkGeneratorWhileYielding(
+      play.getExpansionOptions()
+    )) {
       let word = child.play.word;
       while (rv.children[word] !== undefined) {
         word = word + ".";
       }
       rv.children[word] = getAllPlaysRecursively(child.play);
-      // yield to event loop
-      await new Promise((resolve) => setTimeout(resolve));
     }
   }
   return rv;
@@ -344,12 +353,16 @@ export async function getAllPlaysRecursively(
 export async function findAllPlays(gameStep: GameStep, boardSize: number) {
   let playerWord = findCurrentlyPlayedWord(gameStep, boardSize);
   let startingPlays = [playerWord];
-  for (const option of playerWord.getExpansionOptions()) {
+  for (const option of await walkGeneratorWhileYielding(
+    playerWord.getExpansionOptions()
+  )) {
     startingPlays.push(option.play);
     await new Promise((resolve) => setTimeout(resolve));
   }
   if (playerWord.word.length === 1) {
-    for (const option of playerWord.getReversed().getExpansionOptions()) {
+    for (const option of await walkGeneratorWhileYielding(
+      playerWord.getReversed().getExpansionOptions()
+    )) {
       startingPlays.push(option.play);
       await new Promise((resolve) => setTimeout(resolve));
     }
