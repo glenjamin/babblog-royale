@@ -1,4 +1,4 @@
-import { GameStep, Letter, SparseArray } from "./types";
+import { GameStep } from "./types";
 import words from "./words.json";
 import { horizontalSlice, verticalSlice } from "./utils/gameBoardHelper";
 
@@ -11,9 +11,11 @@ export class Word {
   private readonly gameStep: GameStep;
   private readonly boardSize: number;
   readonly isHorizontal: boolean;
+  /** Index of the axis this word sits in */
   readonly axisIndex: number;
   readonly startIndex: number;
   readonly endIndex: number;
+  /** The letters of this word */
   readonly word: string;
 
   constructor(
@@ -32,16 +34,15 @@ export class Word {
     this.endIndex = middleIndex;
 
     if (intended === null) {
-      let s: SparseArray<Letter>;
+      // this is an already placed word
+      // we need to find its start and end index
 
-      if (isHorizontal) {
-        s = horizontalSlice(this.gameStep.letters, boardSize, axisIndex);
-      } else {
-        s = verticalSlice(this.gameStep.letters, boardSize, axisIndex);
-      }
+      let s = this.mySlice();
 
+      // find start and end index by searching where the word starts and ends
       for (let i = middleIndex - 1; true; i--) {
         if (s[i] === undefined) {
+          // the word ended one letter before
           this.startIndex = i + 1;
           break;
         }
@@ -54,17 +55,46 @@ export class Word {
       }
       this.word = s.slice(this.startIndex, this.endIndex).join("");
     } else {
+      // this is a word that is being placed
       this.word = intended.word;
       this.startIndex = intended.startIndex;
       this.endIndex = intended.startIndex + this.word.length;
     }
   }
 
-  isValid() {
+  mySlice() {
+    if (this.isHorizontal) {
+      return horizontalSlice(
+        this.gameStep.letters,
+        this.boardSize,
+        this.axisIndex
+      );
+    } else {
+      return verticalSlice(
+        this.gameStep.letters,
+        this.boardSize,
+        this.axisIndex
+      );
+    }
+  }
+
+  isInDictionary() {
     return words.includes(this.word);
   }
 
   isValidForPlacement() {
+    if (!this.isInDictionary()) return false;
+
+    // check if the board is free of other letters
+    let s = this.mySlice();
+    for (let i = this.startIndex; i < this.endIndex; i++) {
+      // check if the spot is free or if it is the same letter
+      if (s[i] !== undefined && s[i] !== this.word[i - this.startIndex]) {
+        return false;
+      }
+    }
+
+    // check surrounding letters and the words they make up
     for (let i = this.startIndex; i < this.endIndex; i++) {
       let testWord = new Word(
         this.gameStep,
@@ -74,14 +104,14 @@ export class Word {
         this.axisIndex, // use our letter for this word's middle
         null
       );
-      if (!testWord.isValid()) {
+      if (!testWord.isInDictionary()) {
         return false;
       }
     }
     return true;
   }
 
-  getSlicesAcross(){
+  getSlicesAcross() {
     let rv = [];
     let sliceFunction = this.isHorizontal ? verticalSlice : horizontalSlice;
     for (let i = this.startIndex; i < this.endIndex; i++) {
@@ -94,9 +124,11 @@ export class Word {
 export function findPlayerWord(gameStep: GameStep, boardSize: number) {
   let firstOwner = gameStep.owners.indexOf(0);
   let isHorizontal = gameStep.owners[firstOwner + 1] === 0;
-  let axisIndex = Math.floor(firstOwner / boardSize);
-  let middleIndex = firstOwner % boardSize;
+  let axisIndex = Math.floor(firstOwner / boardSize); // y coordinate
+  let middleIndex = firstOwner % boardSize; // x coordinate
   if (!isHorizontal) {
+    // because these are basically the x and y coordinates of the first letter
+    // if the word is vertical, we need to switch axisIndex and middleIndex
     [axisIndex, middleIndex] = [middleIndex, axisIndex];
   }
   return new Word(

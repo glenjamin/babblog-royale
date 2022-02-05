@@ -23,7 +23,7 @@ export function horizontalSlice<T>(
 export function sliceToRegex(
   slice: SparseArray<Letter>,
   firstIndex: number,
-  playerRack: Array<Letter>,
+  playerRack: Array<Letter>
 ) {
   let optionsGroup = `[${playerRack.join("")}]`;
   let rv = "";
@@ -42,7 +42,7 @@ export function sliceToRegex(
       forced = "";
     }
   };
-  const clearFree = (anyway=false) => {
+  const clearFree = (anyway = false) => {
     if (freeAmount > 0 || rv === "" || anyway) {
       rv += `(${optionsGroup}{0,${freeAmount}})`;
       freeAmount = 0;
