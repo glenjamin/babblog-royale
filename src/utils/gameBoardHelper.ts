@@ -44,7 +44,7 @@ export function sliceToRegex(
   };
   const clearFree = (anyway = false) => {
     if (freeAmount > 0 || rv === "" || anyway) {
-      rv += `(${optionsGroup}{0,${freeAmount}})`;
+      rv += `(${optionsGroup}{0,${Math.min(freeAmount, playerRack.length)}})`;
       freeAmount = 0;
     }
   };

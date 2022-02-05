@@ -17,20 +17,39 @@ export type ExpansionOption = {
   remainingLetters: Letter[];
 };
 
+export type SimulationResult = {
+  isValid: boolean;
+  rackAfterPlay: Letter[] | null;
+  boardAfterPlay: SparseArray<Letter> | null;
+};
+
+export type NestedPlay = {
+  thisPlay: Play;
+  children: NestedPlay[];
+};
+
 export class Play {
+  /** The letters of this word */
+  readonly word: string; // this is first so it shows up first in console
+
   private readonly letters: SparseArray<Letter>;
   private readonly boardSize: number;
+  /** the rack before this play.
+   *  Is estimated for words that are already played
+   */
+  readonly playerRackBefore: Letter[];
+  /** the rack after this play was performed */
+  readonly playerRackAfter: Letter[];
   readonly isHorizontal: boolean;
   /** Index of the axis this word sits in */
   readonly axisIndex: number;
   readonly startIndex: number;
   readonly endIndex: number;
-  /** The letters of this word */
-  readonly word: string;
 
   constructor(
     letters: SparseArray<Letter>,
     boardSize: number,
+    playerRack: Letter[], // before if intended === null, else after
     isHorizontal: boolean,
     axisIndex: number,
     middleIndex: number,
@@ -81,6 +100,20 @@ export class Play {
         this.word.slice(0, startIndex) +
         intended.word +
         this.word.slice(startIndex + intended.word.length);
+
+      this.playerRackBefore = [...playerRack];
+      let rackAfterPlay = this.isValidToPlay().rackAfterPlay;
+      if (rackAfterPlay === null) {
+        throw new Error("Invalid intention");
+      } else {
+        this.playerRackAfter = rackAfterPlay;
+      }
+    } else {
+      this.playerRackAfter = playerRack;
+      this.playerRackBefore = [...playerRack];
+      for (const letter of this.word) {
+        this.playerRackBefore.push(letter as Letter);
+      }
     }
   }
 
@@ -99,10 +132,12 @@ export class Play {
 
   /**
    * Returns whether this word can be placed on the board
-   * @param placedLetters out parameter - letters that are needed to play this word
    */
-  isValidToPlay(placedLetters: Array<Letter> = []) {
-    if (!this.isInDictionary()) return false;
+  isValidToPlay(): SimulationResult {
+    if (!this.isInDictionary())
+      return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
+
+    let rackCopy = [...this.playerRackBefore];
 
     // check if the board is free of other letters
     let s = this.mySlice();
@@ -110,10 +145,18 @@ export class Play {
     for (let i = this.startIndex; i < this.endIndex; i++) {
       // check if the spot is free or if it is the same letter
       if (s[i] !== undefined && s[i] !== this.word[i - this.startIndex]) {
-        return false;
+        return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
       } else if (s[i] === undefined) {
         needsPlacementIndices.push(i);
-        placedLetters.push(this.word[i - this.startIndex] as Letter);
+        // remove the letter from rack copy
+        let letterIndex = rackCopy.indexOf(
+          this.word[i - this.startIndex] as Letter
+        );
+        if (letterIndex !== -1) {
+          rackCopy.splice(letterIndex, 1);
+        } else {
+          return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
+        }
       }
     }
 
@@ -134,16 +177,25 @@ export class Play {
       let testWord = new Play(
         simulated,
         this.boardSize,
+        [...rackCopy],
         !this.isHorizontal, // intentionally reversed
         i, // intentionally switched from axisIndex
         this.axisIndex, // use our letter for this word's middle
         null
       );
       if (!testWord.isInDictionary()) {
-        return false;
+        return {
+          isValid: false,
+          rackAfterPlay: [...rackCopy],
+          boardAfterPlay: null,
+        };
       }
     }
-    return true;
+    return {
+      isValid: true,
+      rackAfterPlay: [...rackCopy],
+      boardAfterPlay: [...simulated],
+    };
   }
 
   getSlicesAcross() {
@@ -155,52 +207,71 @@ export class Play {
     return rv;
   }
 
+  findPlaysAcross() {
+    let simulationResult = this.isValidToPlay();
+    if (!simulationResult.isValid) return [];
+    let rv = [];
+    for (let i = this.startIndex; i < this.endIndex; i++) {
+      rv.push(
+        new Play(
+          simulationResult.boardAfterPlay!,
+          this.boardSize,
+          [...this.playerRackAfter],
+          !this.isHorizontal,
+          i,
+          this.axisIndex,
+          null
+        )
+      );
+    }
+    return rv;
+  }
+
   /**
    * Returns all the words this word could be expanded into
    */
-  async *getExpansionOptions(
-    playerRack: Array<Letter>
-  ): AsyncGenerator<ExpansionOption> {
-    // no expansion is also a valid option
-    yield { play: this, remainingLetters: [...playerRack] };
+  getExpansionOptions(): Array<ExpansionOption> {
+    if (this.playerRackAfter.length === 0) return [];
 
-    let re = sliceToRegex(this.mySlice(), this.startIndex, playerRack);
+    let rv = [];
+    let re = sliceToRegex(
+      this.mySlice(),
+      this.startIndex,
+      this.playerRackAfter
+    );
     for (const word of words) {
-      if (isValidMatch(word.match(re), playerRack)) {
+      if (isValidMatch(word.match(re), this.playerRackAfter)) {
         const wordOnlyRe = new RegExp(this.word, "g");
         for (const match of Array.from(word.matchAll(wordOnlyRe))) {
           // find start index of the word
           let startIndex = this.startIndex - match.index!;
-          let wordObj = new Play(
-            this.letters,
-            this.boardSize,
-            this.isHorizontal,
-            this.axisIndex,
-            this.startIndex,
-            {
-              word,
-              startIndex: startIndex,
-            }
-          );
-          let usedLetters: Array<Letter> = [];
-          let validPlay = wordObj.isValidToPlay(usedLetters);
-          let rackCopy = [...playerRack];
-          // see if the player actually had used letters in their rack
-          for (const letter of usedLetters) {
-            if (!validPlay) break;
-            let index = rackCopy.indexOf(letter);
-            if (index !== -1) {
-              rackCopy.splice(index, 1);
-            } else {
-              validPlay = false;
-            }
+          let playObj: Play;
+          try {
+            playObj = new Play(
+              this.letters,
+              this.boardSize,
+              [...this.playerRackAfter],
+              this.isHorizontal,
+              this.axisIndex,
+              this.startIndex,
+              {
+                word,
+                startIndex: startIndex,
+              }
+            );
+          } catch (e) {
+            continue;
           }
-          if (validPlay) {
-            yield { play: wordObj, remainingLetters: rackCopy };
+          if (playObj.isValidToPlay().isValid) {
+            rv.push({
+              play: playObj,
+              remainingLetters: playObj.playerRackAfter,
+            });
           }
         }
       }
     }
+    return rv;
   }
 }
 
@@ -217,9 +288,45 @@ export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
   return new Play(
     gameStep.letters,
     boardSize,
+    gameStep.player.letters,
     isHorizontal,
     axisIndex,
     middleIndex,
     null
   );
+}
+
+const MAX_DEPTH = 4;
+
+export function getAllPlaysRecursively(
+  currentPlay: Play,
+  depth = 0
+): NestedPlay {
+  let rv: NestedPlay = {
+    thisPlay: currentPlay,
+    children: [],
+  };
+  if (depth >= MAX_DEPTH) return rv;
+
+  let playsAcross = currentPlay.findPlaysAcross();
+  for (const play of playsAcross) {
+    for (const child of play.getExpansionOptions()) {
+      rv.children.push(getAllPlaysRecursively(child.play, depth + 1));
+    }
+  }
+  return rv;
+}
+
+export function findAllPlays(gameStep: GameStep, boardSize: number) {
+  let playerWord = findCurrentlyPlayedWord(gameStep, boardSize);
+  let startingPlays = [playerWord];
+  for (const option of playerWord.getExpansionOptions()) {
+    startingPlays.push(option.play);
+  }
+  let rv = [];
+  for (const play of startingPlays) {
+    rv.push(getAllPlaysRecursively(play));
+  }
+
+  return rv;
 }
