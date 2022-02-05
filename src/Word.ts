@@ -10,11 +10,11 @@ export type Intention = {
 export class Word {
   private readonly gameStep: GameStep;
   private readonly boardSize: number;
-  private readonly isHorizontal: boolean;
-  private readonly axisIndex: number;
-  private readonly startIndex: number;
-  private readonly endIndex: number;
-  private readonly word: string;
+  readonly isHorizontal: boolean;
+  readonly axisIndex: number;
+  readonly startIndex: number;
+  readonly endIndex: number;
+  readonly word: string;
 
   constructor(
     gameStep: GameStep,
@@ -79,6 +79,15 @@ export class Word {
       }
     }
     return true;
+  }
+
+  getSlicesAcross(){
+    let rv = [];
+    let sliceFunction = this.isHorizontal ? verticalSlice : horizontalSlice;
+    for (let i = this.startIndex; i < this.endIndex; i++) {
+      rv.push(sliceFunction(this.gameStep.letters, this.boardSize, i));
+    }
+    return rv;
   }
 }
 
