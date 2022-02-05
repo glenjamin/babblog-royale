@@ -12,6 +12,11 @@ export type Intention = {
   startIndex: number;
 };
 
+export type ExpansionOption = {
+  word: Word;
+  remainingLetters: Letter[];
+};
+
 export class Word {
   private readonly letters: SparseArray<Letter>;
   private readonly boardSize: number;
@@ -92,7 +97,11 @@ export class Word {
     return words.includes(this.word);
   }
 
-  isValidForPlacement() {
+  /**
+   * Returns whether this word can be placed on the board
+   * @param placedLetters out parameter - letters that are needed to place this word
+   */
+  isValidForPlacement(placedLetters: Array<Letter> = []) {
     if (!this.isInDictionary()) return false;
 
     // check if the board is free of other letters
@@ -104,6 +113,7 @@ export class Word {
         return false;
       } else if (s[i] === undefined) {
         needsPlacementIndices.push(i);
+        placedLetters.push(this.word[i - this.startIndex] as Letter);
       }
     }
 
@@ -148,9 +158,11 @@ export class Word {
   /**
    * Returns all the words this word could be expanded into
    */
-  async *getExpansionOptions(playerRack: Array<Letter>) {
+  async *getExpansionOptions(
+    playerRack: Array<Letter>
+  ): AsyncGenerator<ExpansionOption> {
     // no expansion is also a valid option
-    yield this;
+    yield { word: this, remainingLetters: [...playerRack] };
 
     let re = sliceToRegex(this.mySlice(), this.startIndex, playerRack);
     for (const word of words) {
@@ -170,8 +182,21 @@ export class Word {
               startIndex: startIndex,
             }
           );
-          if (wordObj.isValidForPlacement()) {
-            yield wordObj;
+          let usedLetters: Array<Letter> = [];
+          let validForPlacement = wordObj.isValidForPlacement(usedLetters);
+          let rackCopy = [...playerRack];
+          // see if the player actually had used letters in their rack
+          for (const letter of usedLetters) {
+            if (!validForPlacement) break;
+            let index = rackCopy.indexOf(letter);
+            if (index !== -1) {
+              rackCopy.splice(index, 1);
+            } else {
+              validForPlacement = false;
+            }
+          }
+          if (validForPlacement) {
+            yield { word: wordObj, remainingLetters: rackCopy };
           }
         }
       }
