@@ -409,7 +409,15 @@ export async function findAllPlays(gameStep: GameStep, boardSize: number) {
   return rv;
 }
 
-export async function findBingos(possiblePlays: NestedPlay): Promise<Play[]> {
+const MAX_PLAY_TRIES = 2;
+
+export async function findBingos(
+  possiblePlays: NestedPlay,
+  cantPlay: { [rack: string]: number } = {}
+): Promise<Play[]> {
+  let playerRack = [...possiblePlays.thisPlay.playerRackAfter].sort().join("");
+  if (cantPlay[playerRack] >= MAX_PLAY_TRIES) return [];
+
   let candidates: Array<Array<Play>> = [];
   let keyLengthSort = (a: string, b: string) => {
     let wordA = a.replaceAll(".", "");
@@ -431,7 +439,7 @@ export async function findBingos(possiblePlays: NestedPlay): Promise<Play[]> {
     // see if the rack is empty. if so, this is a bingo
     if (child.thisPlay.playerRackAfter.length === 0) return [child.thisPlay];
     // otherwise, recurse
-    let bingo = await findBingos(child);
+    let bingo = await findBingos(child, cantPlay);
     if (bingo.length > 0) {
       return [child.thisPlay, ...bingo];
     }
@@ -512,6 +520,13 @@ export async function findBingos(possiblePlays: NestedPlay): Promise<Play[]> {
   let sorted = [...candidates].sort((a, b) => a.length - b.length);
   if (sorted.length > 0) {
     return sorted[0];
+  }
+
+  // increase the count of the rack we couldn't play
+  if (cantPlay[playerRack] === undefined) {
+    cantPlay[playerRack] = 1;
+  } else {
+    cantPlay[playerRack]++;
   }
   return [];
 }
