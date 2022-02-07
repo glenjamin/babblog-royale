@@ -413,6 +413,7 @@ const MAX_PLAY_TRIES = 2;
 
 export async function findBingos(
   possiblePlays: NestedPlay,
+  callback: (bingo: Play[]) => void = () => {},
   cantPlay: { [rack: string]: number } = {}
 ): Promise<Play[]> {
   let playerRack = [...possiblePlays.thisPlay.playerRackAfter].sort().join("");
@@ -437,10 +438,14 @@ export async function findBingos(
   let checkChildOrRecurse = async (key: string) => {
     let child = possiblePlays.children[key];
     // see if the rack is empty. if so, this is a bingo
-    if (child.thisPlay.playerRackAfter.length === 0) return [child.thisPlay];
+    if (child.thisPlay.playerRackAfter.length === 0) {
+      callback([child.thisPlay]);
+      return [child.thisPlay];
+    }
     // otherwise, recurse
-    let bingo = await findBingos(child, cantPlay);
+    let bingo = await findBingos(child, () => {}, cantPlay);
     if (bingo.length > 0) {
+      callback([child.thisPlay, ...bingo]);
       return [child.thisPlay, ...bingo];
     }
     return [];
