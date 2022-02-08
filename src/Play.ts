@@ -327,6 +327,8 @@ export class Play {
   }
 
   getScore() {
+    if (this.word.length === 1) return 0; // starting words don't have a score
+
     // based on https://discord.com/channels/880689902411452416/917600020591681616/940671620798894160
     // Every tile in your active word, multiplied by any squares you played onto like 3× letter or 2× word, all times (1 + 0.2×#kills)
     let rv = 0;
@@ -485,6 +487,14 @@ export async function findAllPlays(game: Game, gameStep: GameStep) {
   return rv;
 }
 
+export function scoreOfPlays(plays: Play[]) {
+  let rv = 0;
+  for (const play of plays) {
+    rv += play.getScore();
+  }
+  return rv;
+}
+
 const MAX_PLAY_TRIES = 2;
 
 export async function findBingos(
@@ -537,15 +547,14 @@ export async function findBingos(
   };
   let checkForGoodBingo = async (key: string) => {
     let bingo = await checkChildOrRecurse(key);
-    let bingoLength = bingo.length;
 
     // if playing one word results in bingo, we're done
-    if (bingoLength === 1) {
+    if (bingo.length === 1) {
       return { bingo: bingo, good: true };
     }
 
     // otherwise, try to improve the order of the bingo
-    if (bingoLength > 0) {
+    if (bingo.length > 0) {
       // sort the plays by their word length
       let sorted = [...bingo].sort((a, b) => a.word.length - b.word.length);
 
@@ -557,10 +566,10 @@ export async function findBingos(
         );
         if (key) {
           // see if this key is a bingo
-          let bingo = await checkChildOrRecurse(key);
-          if (bingo.length > 0 && bingo.length < bingoLength) {
+          let newBingo = await checkChildOrRecurse(key);
+          if (scoreOfPlays(newBingo) > scoreOfPlays(bingo)) {
             // we improved our bingo
-            return { bingo: bingo, good: true };
+            return { bingo: newBingo, good: true };
           }
         }
       }
