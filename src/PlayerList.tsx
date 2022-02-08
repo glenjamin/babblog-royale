@@ -67,7 +67,7 @@ function PlayerListItem({
       active={isSelected}
     >
       <LetterCell
-        letter="a"
+        letter={player.startingLetter}
         owner={isDead ? undefined : player}
         selectPlayer={selectPlayer}
       />

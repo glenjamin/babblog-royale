@@ -177,6 +177,11 @@ export function newParser() {
    */
   let player: GameStep["player"];
 
+  /**
+   * The amount of kills parsed is kept track of to correctly parse multi kills
+   */
+  let parsedKillsAmount: number;
+
   const handlers: Handlers = {
     ServerLoginConfirmation({ xpLevels }) {
       levels = xpLevels;
@@ -192,6 +197,7 @@ export function newParser() {
       hot = [];
       player = emptyStep.player;
       startIndex = undefined;
+      parsedKillsAmount = 0;
 
       game = {
         id: room,
@@ -230,6 +236,7 @@ export function newParser() {
     SyncNewBoardState({ squaresWithLetters, playerScores }) {
       if (startIndex !== undefined && game.you.name === "") {
         identifyPlayerOne(squaresWithLetters);
+        getStartingLetters(squaresWithLetters);
       }
 
       const letters: GameStep["letters"] = [];
@@ -254,13 +261,13 @@ export function newParser() {
         metrics[index].score = score;
       });
 
-      // Have we noted a kill for the step we're about to add?
-      const lastKill = game.kills[game.kills.length - 1];
-      if (lastKill && timeline.length === lastKill.step) {
+      // Has there been any kills we haven't parsed yet?
+      for (let kill of game.kills.slice(parsedKillsAmount)) {
         // If it was killed by a player, up their kill count
-        if (lastKill.type === "word") {
-          metrics[lastKill.by].kills += 1;
+        if (kill.type === "word") {
+          metrics[kill.by].kills += 1;
         }
+        parsedKillsAmount++;
       }
 
       addGameStep({ letters, owners, metrics });
@@ -473,6 +480,17 @@ export function newParser() {
     game.you.name = game.players[0].name;
   }
 
+  function getStartingLetters(
+    squares: Events["SyncNewBoardState"]["squaresWithLetters"]
+  ) {
+    game.players.forEach((player) => {
+      const startingSquare = squares.find(
+        ({ playerLivingOn }) => playerLivingOn === player.socketID
+      );
+      player.startingLetter = startingSquare?.letter || "a";
+    });
+  }
+
   let buffer = "";
   function handleLine(line: string) {
     if (line[0] !== "[" || line[1] !== '"') return;
@@ -508,12 +526,15 @@ const isGameMalformed = (game: Game) => {
   return game.timeline.length === 0;
 };
 
-function indexPlayers(players: Omit<PlayerDetails, "index" | "killedStep">[]) {
+function indexPlayers(
+  players: Omit<PlayerDetails, "index" | "killedStep" | "startingLetter">[]
+) {
   return players.map(({ name, socketID }, index) => ({
     socketID,
     name,
     index: playerIndex(index),
     killedStep: null,
+    startingLetter: "a" as Letter,
   }));
 }
 

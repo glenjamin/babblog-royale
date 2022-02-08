@@ -43,6 +43,20 @@ describe("Parsing", () => {
     });
   });
 
+  describe("multikill", () => {
+    beforeAll(async () => {
+      games = await parseSample("multikill");
+      [game] = games;
+    });
+    it("should parse one game", () => {
+      expect(games).toHaveLength(1);
+    });
+    it("should detect multikills", () => {
+      const plurmorant = game.players.findIndex((p) => p.name === "Plurmorant");
+      expect(game.timeline[1].metrics[plurmorant].kills).toBe(2);
+    });
+  });
+
   describe("disconnected immediately", () => {
     beforeAll(async () => {
       games = await parseSample("immediate-disconnect");

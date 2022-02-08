@@ -30,6 +30,7 @@ const players: PlayerDetails[] = [
   socketID: ("xx_" + name) as SocketID,
   index: i as PlayerIndex,
   killedStep: null,
+  startingLetter: i % 2 === 0 ? "a" : "i",
 }));
 
 const placeholderGame: Game = {

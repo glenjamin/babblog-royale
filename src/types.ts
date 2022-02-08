@@ -33,6 +33,7 @@ export type PlayerDetails = {
   socketID: SocketID;
   index: PlayerIndex;
   killedStep: number | null;
+  startingLetter: Letter;
 };
 
 interface KillBase {
