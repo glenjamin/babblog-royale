@@ -1,4 +1,4 @@
-import { GameStep, Letter, SparseArray } from "./types";
+import { Bonus, Game, GameStep, Letter, SparseArray } from "./types";
 import words from "./words.json";
 import {
   horizontalSlice,
@@ -6,6 +6,7 @@ import {
   sliceToRegex,
   verticalSlice,
 } from "./utils/gameBoardHelper";
+import { tileValues } from "./constants";
 
 export type Intention = {
   word: string;
@@ -35,6 +36,8 @@ export class Play {
 
   private readonly letters: SparseArray<Letter>;
   private readonly boardSize: number;
+  private readonly boardBase: SparseArray<Bonus>;
+  private readonly playerKillsBefore: number;
   /** the rack before this play.
    *  Is estimated for words that are already played
    */
@@ -50,6 +53,8 @@ export class Play {
   constructor(
     letters: SparseArray<Letter>,
     boardSize: number,
+    boardBase: SparseArray<Bonus>,
+    playerKillsBefore: number,
     playerRack: Letter[], // before if intended === null, else after
     isHorizontal: boolean,
     axisIndex: number,
@@ -58,6 +63,8 @@ export class Play {
   ) {
     this.letters = letters;
     this.boardSize = boardSize;
+    this.boardBase = boardBase;
+    this.playerKillsBefore = playerKillsBefore;
     this.isHorizontal = isHorizontal;
     this.axisIndex = axisIndex;
 
@@ -118,11 +125,13 @@ export class Play {
     }
   }
 
-  mySlice() {
+  mySlice<T>(
+    getSliceOf: SparseArray<T> = this.letters as SparseArray<T>
+  ): SparseArray<T> {
     if (this.isHorizontal) {
-      return horizontalSlice(this.letters, this.boardSize, this.axisIndex);
+      return horizontalSlice(getSliceOf, this.boardSize, this.axisIndex);
     } else {
-      return verticalSlice(this.letters, this.boardSize, this.axisIndex);
+      return verticalSlice(getSliceOf, this.boardSize, this.axisIndex);
     }
   }
 
@@ -184,6 +193,8 @@ export class Play {
       let testWord = new Play(
         simulated,
         this.boardSize,
+        this.boardBase,
+        this.playerKillsBefore,
         [...rackCopy],
         !this.isHorizontal, // intentionally reversed
         i, // intentionally switched from axisIndex
@@ -226,6 +237,8 @@ export class Play {
         new Play(
           simulationResult.boardAfterPlay!,
           this.boardSize,
+          this.boardBase,
+          this.playerKillsBefore + this.getNumberOfKills(),
           [...this.playerRackAfter],
           !this.isHorizontal,
           i,
@@ -259,6 +272,8 @@ export class Play {
             playObj = new Play(
               this.letters,
               this.boardSize,
+              this.boardBase,
+              this.playerKillsBefore,
               [...this.playerRackAfter],
               this.isHorizontal,
               this.axisIndex,
@@ -287,6 +302,8 @@ export class Play {
     return new Play(
       this.letters,
       this.boardSize,
+      this.boardBase,
+      this.playerKillsBefore,
       [...this.playerRackAfter],
       !this.isHorizontal,
       this.startIndex,
@@ -303,13 +320,70 @@ export class Play {
       this.word === other.word
     );
   }
+
+  getNumberOfKills() {
+    // TODO: implement
+    return 0;
+  }
+
+  getScore() {
+    // based on https://discord.com/channels/880689902411452416/917600020591681616/940671620798894160
+    // Every tile in your active word, multiplied by any squares you played onto like 3× letter or 2× word, all times (1 + 0.2×#kills)
+    let rv = 0;
+    for (const letter of this.word) {
+      rv += tileValues(letter as Letter);
+    }
+    let baseSlice = this.mySlice(this.boardBase);
+    let letterSlice = this.mySlice(this.letters);
+    let wordBonus = 1;
+    let tilesPlayed = 0;
+    for (let i = this.startIndex; i < this.endIndex; i++) {
+      let boardLetter = letterSlice[i];
+      if (boardLetter !== undefined) continue; // we didn't play this letter so no bonus for it
+      tilesPlayed++;
+      let bonus = baseSlice[i];
+      if (bonus === undefined) continue; // no bonus for this letter
+      if (["3x_letter", "5x_letter"].includes(bonus)) {
+        let letter = this.word[i - this.startIndex] as Letter;
+        let letterBonus = bonus === "3x_letter" ? 2 : 4; // we already have the letter value in there once
+        rv += tileValues(letter) * letterBonus;
+      } else if (["2x_word", "3x_word"].includes(bonus)) {
+        wordBonus *= bonus === "2x_word" ? 2 : 3;
+      }
+    }
+    rv *= wordBonus;
+    rv *= 1 + 0.2 * this.playerKillsBefore;
+
+    // Plus every tile at face value for other words formed by your play
+    for (const play of this.findPlaysAcross()) {
+      if (play.word.length === 1) continue;
+      for (const letter of play.word) {
+        rv += tileValues(letter as Letter);
+      }
+    }
+
+    // Plus 50 per kill achieved by that play
+    rv += this.getNumberOfKills() * 50;
+
+    // Plus 2^(L-2) where L is the number of tiles you played, if L >= 4
+    if (tilesPlayed >= 4) {
+      rv += Math.pow(2, tilesPlayed - 2);
+    }
+
+    // Plus (2L-6)^3 where L is the number of tiles you played, if L >= 4 and you emptied your rack with that play
+    if (tilesPlayed >= 4 && this.playerRackAfter.length === 0) {
+      rv += Math.pow(2 * tilesPlayed - 6, 3);
+    }
+
+    return rv;
+  }
 }
 
-export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
+export function findCurrentlyPlayedWord(game: Game, gameStep: GameStep) {
   let firstOwner = gameStep.owners.indexOf(0);
   let isHorizontal = gameStep.owners[firstOwner + 1] === 0;
-  let axisIndex = Math.floor(firstOwner / boardSize); // y coordinate
-  let middleIndex = firstOwner % boardSize; // x coordinate
+  let axisIndex = Math.floor(firstOwner / game.board.size); // y coordinate
+  let middleIndex = firstOwner % game.board.size; // x coordinate
   if (!isHorizontal) {
     // because these are basically the x and y coordinates of the first letter
     // if the word is vertical, we need to switch axisIndex and middleIndex
@@ -317,7 +391,9 @@ export function findCurrentlyPlayedWord(gameStep: GameStep, boardSize: number) {
   }
   return new Play(
     gameStep.letters,
-    boardSize,
+    game.board.size,
+    game.board.base,
+    gameStep.metrics[0].kills,
     gameStep.player.letters,
     isHorizontal,
     axisIndex,
@@ -369,8 +445,8 @@ export async function getAllPlaysRecursively(
   return rv;
 }
 
-export async function findAllPlays(gameStep: GameStep, boardSize: number) {
-  let playerWord = findCurrentlyPlayedWord(gameStep, boardSize);
+export async function findAllPlays(game: Game, gameStep: GameStep) {
+  let playerWord = findCurrentlyPlayedWord(game, gameStep);
   let startingPlays = [playerWord];
   for (const option of await walkGeneratorWhileYielding(
     playerWord.getExpansionOptions()
@@ -414,10 +490,12 @@ const MAX_PLAY_TRIES = 2;
 export async function findBingos(
   possiblePlays: NestedPlay,
   callback: (bingo: Play[]) => void = () => {},
-  cantPlay: { [rack: string]: number } = {}
+  cantPlay: { [rack: string]: number } = {},
+  depthRemaining = 3
 ): Promise<Play[]> {
   let playerRack = [...possiblePlays.thisPlay.playerRackAfter].sort().join("");
   if (cantPlay[playerRack] >= MAX_PLAY_TRIES) return [];
+  if (depthRemaining === 0) return [];
 
   let candidates: Array<Array<Play>> = [];
   let keyLengthSort = (a: string, b: string) => {
@@ -443,7 +521,14 @@ export async function findBingos(
       return [child.thisPlay];
     }
     // otherwise, recurse
-    let bingo = await findBingos(child, () => {}, cantPlay);
+    let bingo = await findBingos(
+      child,
+      (bingo) => {
+        callback([child.thisPlay, ...bingo]);
+      },
+      cantPlay,
+      depthRemaining - 1
+    );
     if (bingo.length > 0) {
       callback([child.thisPlay, ...bingo]);
       return [child.thisPlay, ...bingo];
