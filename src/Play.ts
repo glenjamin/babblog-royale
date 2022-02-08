@@ -450,19 +450,20 @@ export async function getAllPlaysRecursively(
 export async function findAllPlays(game: Game, gameStep: GameStep) {
   let playerWord = findCurrentlyPlayedWord(game, gameStep);
   let startingPlays = [playerWord];
-  for (const option of await walkGeneratorWhileYielding(
-    playerWord.getExpansionOptions()
-  )) {
-    startingPlays.push(option.play);
-    await new Promise((resolve) => setTimeout(resolve));
-  }
   if (playerWord.word.length === 1) {
+    startingPlays = []; // we are forced to expand the word anyway
     for (const option of await walkGeneratorWhileYielding(
       playerWord.getReversed().getExpansionOptions()
     )) {
       startingPlays.push(option.play);
       await new Promise((resolve) => setTimeout(resolve));
     }
+  }
+  for (const option of await walkGeneratorWhileYielding(
+    playerWord.getExpansionOptions()
+  )) {
+    startingPlays.push(option.play);
+    await new Promise((resolve) => setTimeout(resolve));
   }
 
   let rv: NestedPlay = {
