@@ -3,19 +3,19 @@ import styles from "./Game.module.css";
 
 interface GameGridProps {
   game: Game;
-  step: number;
+  currentStep: number;
   selectedPlayer: number | null;
   selectPlayer: (player: number | null) => void;
 }
 export default function GameGrid({
   game,
-  step,
+  currentStep,
   selectedPlayer,
   selectPlayer,
 }: GameGridProps) {
   const size = game.board.size;
   const range = Array(size).fill(0);
-  const state = game.timeline[step];
+  const state = game.timeline[currentStep];
   return (
     <table cellSpacing={0} cellPadding={0} className={styles.board}>
       <tbody>
