@@ -5,7 +5,7 @@ import { Game } from "./types";
 type State = {
   games: Game[];
   game: Game;
-  gameStep: number; // index into game timeline
+  currentStep: number; // index into game timeline
   selectedPlayer: number | null; // index into players
   showImportDialog: boolean;
   showHotkeyHelp: boolean;
@@ -14,7 +14,7 @@ type State = {
 const initialState: State = {
   games: [],
   game: placeholderGame,
-  gameStep: 0,
+  currentStep: 0,
   selectedPlayer: null,
   showImportDialog: false,
   showHotkeyHelp: false,
@@ -52,7 +52,7 @@ const handlers: Handlers = {
     return update(state, {
       games,
       game: games[games.length - 1] || placeholderGame,
-      gameStep: 0,
+      currentStep: 0,
       showImportDialog: false,
       selectedPlayer: null,
     });
@@ -60,7 +60,7 @@ const handlers: Handlers = {
   chooseGame(state, { id }) {
     return update(state, {
       game: state.games.find((g) => g.id === id) || placeholderGame,
-      gameStep: 0,
+      currentStep: 0,
       selectedPlayer: null,
     });
   },
@@ -69,32 +69,32 @@ const handlers: Handlers = {
     if (step < 0) step = 0;
     const max = game.timeline.length - 1;
     if (step >= max) step = max;
-    return update(state, { gameStep: step });
+    return update(state, { currentStep: step });
   },
   stepBack(state) {
     return reducer(state, {
       name: "chooseStep",
-      payload: { step: state.gameStep - 1 },
+      payload: { step: state.currentStep - 1 },
     });
   },
   stepForwards(state) {
     return reducer(state, {
       name: "chooseStep",
-      payload: { step: state.gameStep + 1 },
+      payload: { step: state.currentStep + 1 },
     });
   },
   stepMeBack(state) {
-    const { game, gameStep } = state;
+    const { game, currentStep } = state;
     return reducer(state, {
       name: "chooseStep",
-      payload: { step: findMyStep(game, gameStep, -1) },
+      payload: { step: findMyStep(game, currentStep, -1) },
     });
   },
   stepMeForwards(state) {
-    const { game, gameStep } = state;
+    const { game, currentStep } = state;
     return reducer(state, {
       name: "chooseStep",
-      payload: { step: findMyStep(game, gameStep, 1) },
+      payload: { step: findMyStep(game, currentStep, 1) },
     });
   },
   selectPlayer(state, { player }) {

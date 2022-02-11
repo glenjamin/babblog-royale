@@ -21,7 +21,7 @@ function App() {
   const {
     games,
     game,
-    gameStep,
+    currentStep,
     selectedPlayer,
     showImportDialog,
     showHotkeyHelp,
@@ -46,7 +46,7 @@ function App() {
           <Col>
             <GameGrid
               game={game}
-              step={gameStep}
+              currentStep={currentStep}
               selectedPlayer={selectedPlayer}
               selectPlayer={actions.selectPlayer}
             />
@@ -57,7 +57,7 @@ function App() {
               <Tab eventKey="steps" title="Steps">
                 <Stack className="p-2">
                   <GameStepper
-                    step={gameStep}
+                    currentStep={currentStep}
                     max={game.timeline.length - 1}
                     stepMeBack={actions.stepMeBack}
                     stepBack={actions.stepBack}
@@ -67,13 +67,13 @@ function App() {
                   />
                   <PlayerState
                     levels={game.levels}
-                    {...game.timeline[gameStep].player}
+                    {...game.timeline[currentStep].player}
                   />
                   <PlayerList
                     players={game.players}
                     selectedPlayer={selectedPlayer}
                     selectPlayer={actions.selectPlayer}
-                    currentStep={gameStep}
+                    currentStep={currentStep}
                     timeline={game.timeline}
                   />
                 </Stack>
@@ -82,7 +82,7 @@ function App() {
                 <Stack className="p-2">
                   <Words
                     timeline={game.timeline}
-                    currentStep={gameStep}
+                    currentStep={currentStep}
                     stepTo={actions.chooseStep}
                   />
                 </Stack>

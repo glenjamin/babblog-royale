@@ -70,6 +70,33 @@ const placeholderGame: Game = {
     position: 0,
   },
 };
+
+function placeLetter(
+  x: number,
+  y: number,
+  letter: Letter,
+  owner?: PlayerIndex
+) {
+  const offset = x + placeholderGame.board.size * y;
+  placeholderGame.timeline[0].letters[offset] = letter;
+  if (owner !== undefined) {
+    placeholderGame.timeline[0].owners[offset] = owner;
+  }
+}
+
+function placeWord(
+  x: number,
+  y: number,
+  word: string,
+  direction: "down" | "across",
+  owner?: PlayerIndex
+) {
+  Array.from(word).forEach((letter: any) => {
+    placeLetter(x, y, letter, owner);
+    direction === "down" ? y++ : x++;
+  });
+}
+
 [
   "the",
   "first",
@@ -87,12 +114,7 @@ const placeholderGame: Game = {
   "aka",
   "glenathan",
 ].forEach((word, i) => {
-  const player = players[i];
-  const offset = 1 + (1 + i * 2) * placeholderGame.board.size;
-  Array.from(word).forEach((letter, i) => {
-    placeholderGame.timeline[0].letters[offset + i] = letter as Letter;
-    placeholderGame.timeline[0].owners[offset + i] = player.index;
-  });
+  placeWord(1, 1 + i * 2, word, "across", i as PlayerIndex);
 });
 
 export default placeholderGame;
