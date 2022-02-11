@@ -56,9 +56,7 @@ export function sliceToRegex(
       rv += `(${forced}${currentLetter}`;
       forced = "";
       reachedFirst = true;
-      continue;
-    }
-    if (currentLetter === undefined) {
+    } else if (currentLetter === undefined) {
       clearForced();
       freeAmount++;
     } else {

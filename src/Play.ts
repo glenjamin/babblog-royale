@@ -8,20 +8,9 @@ import {
 } from "./utils/gameBoardHelper";
 import { tileValues } from "./constants";
 
-export type Intention = {
+type Intention = {
   word: string;
   startIndex: number;
-};
-
-export type ExpansionOption = {
-  play: Play;
-  remainingLetters: Letter[];
-};
-
-export type SimulationResult = {
-  isValid: boolean;
-  rackAfterPlay: Letter[] | null;
-  boardAfterPlay: SparseArray<Letter> | null;
 };
 
 export type NestedPlay = {
@@ -31,57 +20,67 @@ export type NestedPlay = {
 };
 
 export class Play {
-  /** The letters of this word */
-  readonly word: string; // this is first so it shows up first in console
-
-  private readonly letters: SparseArray<Letter>;
-  private readonly boardSize: number;
-  private readonly boardBase: SparseArray<Bonus>;
-  private readonly playerKillsBefore: number;
-  /** the rack before this play.
-   *  Is estimated for words that are already played
-   */
-  readonly playerRackBefore: Letter[];
+  // these are first so they show up first in console
+  /** The letters that make up this play */
+  readonly word: string;
   /** the rack after this play was performed */
-  readonly playerRackAfter: Letter[];
+  readonly isValid: boolean;
+  // other properties of the play
   readonly isHorizontal: boolean;
-  /** Index of the axis this word sits in */
+  /** Index of the row/column this word sits in */
   readonly axisIndex: number;
   readonly startIndex: number;
   readonly endIndex: number;
+  readonly isInDictionary: boolean;
+  readonly score: number = 0;
+  readonly playerRackAfter: Letter[];
+  readonly boardLettersAfter: SparseArray<Letter>;
+  readonly playerKillsAfter: number;
+
+  // properties of the game
+  private readonly boardLetters: SparseArray<Letter>;
+  private readonly boardSize: number;
+  private readonly boardBase: SparseArray<Bonus>;
+  private readonly reversePlay?: Play;
 
   constructor(
-    letters: SparseArray<Letter>,
+    boardLetters: SparseArray<Letter>,
     boardSize: number,
     boardBase: SparseArray<Bonus>,
     playerKillsBefore: number,
-    playerRack: Letter[], // before if intended === null, else after
+    playerRackBefore: Letter[],
     isHorizontal: boolean,
     axisIndex: number,
     middleIndex: number,
-    intended: Intention | null
+    calculateScore: boolean = true,
+    isCurrentPlay: boolean = false,
+    intended: Intention | null = null
   ) {
-    this.letters = letters;
+    playerRackBefore = [...playerRackBefore]; // can't mutate the input, could be real rack
+
+    // these variables do not need to be calculated
+    this.boardLetters = boardLetters;
     this.boardSize = boardSize;
     this.boardBase = boardBase;
-    this.playerKillsBefore = playerKillsBefore;
     this.isHorizontal = isHorizontal;
     this.axisIndex = axisIndex;
 
-    let s = this.mySlice();
+    let letterSlice = this.mySlice();
 
-    // find start and end index by searching where the word starts and ends
+    // region find start and end index by searching where the word starts and ends
+    // find the start
     for (
       let i = intended === null ? middleIndex - 1 : intended.startIndex - 1;
       true;
       i--
     ) {
-      if (s[i] === undefined) {
+      if (letterSlice[i] === undefined) {
         // the word ended one letter before
         this.startIndex = i + 1;
         break;
       }
     }
+    // find the end
     for (
       let i =
         intended === null
@@ -90,43 +89,185 @@ export class Play {
       true;
       i++
     ) {
-      if (s[i] === undefined) {
+      if (letterSlice[i] === undefined) {
         this.endIndex = i;
         break;
       }
     }
-    let tempSlice = s.slice(this.startIndex, this.endIndex);
-    // replace undefined with placeholder character
-    tempSlice = tempSlice.map((letter) =>
-      letter === undefined ? "a" : letter
-    );
-    this.word = tempSlice.join("");
+    // endregion
 
+    // region find the word
+    this.word = letterSlice.slice(this.startIndex, this.endIndex).join("");
     if (intended !== null) {
       let startIndex = this.startIndex - intended.startIndex;
       this.word =
         this.word.slice(0, startIndex) +
         intended.word +
         this.word.slice(startIndex + intended.word.length);
+    }
+    // endregion
 
-      this.playerRackBefore = [...playerRack];
-      let rackAfterPlay = this.isValidToPlay().rackAfterPlay;
-      if (rackAfterPlay === null) {
-        throw new Error("Invalid intention");
-      } else {
-        this.playerRackAfter = rackAfterPlay;
+    // region see if the play killed any other players
+    // TODO: implement this
+    let numberOfKills = 0;
+    this.playerKillsAfter = playerKillsBefore + numberOfKills;
+    // endregion
+
+    // region check the validity of the play
+    this.isValid = false;
+    this.playerRackAfter = playerRackBefore;
+    this.boardLettersAfter = [...boardLetters];
+
+    this.isInDictionary = this.word.length === 1 || words.includes(this.word);
+    if (!this.isInDictionary) {
+      this.score = 0;
+      return;
+    }
+
+    if (isCurrentPlay) {
+      this.isValid = true; // current play is always valid
+    } // don't format this line, I can't code fold
+    else if (intended !== null) {
+      // check if the board is free of other letters
+      let needsPlacementIndices = [];
+      let rackCopy = [...playerRackBefore];
+      for (let i = this.startIndex; i < this.endIndex; i++) {
+        // check if the spot is free or if it is the same letter
+        if (
+          letterSlice[i] !== undefined &&
+          letterSlice[i] !== this.word[i - this.startIndex]
+        ) {
+          return;
+        } else if (letterSlice[i] === undefined) {
+          needsPlacementIndices.push(i);
+          // remove the letter from rack copy
+          let letterIndex = rackCopy.indexOf(
+            this.word[i - this.startIndex] as Letter
+          );
+          if (letterIndex !== -1) {
+            rackCopy.splice(letterIndex, 1);
+          } else {
+            return;
+          }
+        }
       }
+
+      // if the word can be placed, simulate placement
+      let simulated = [...this.boardLetters];
+      for (let i = 0; i < needsPlacementIndices.length; i++) {
+        if (this.isHorizontal) {
+          simulated[
+            this.boardSize * this.axisIndex + needsPlacementIndices[i]
+          ] = this.word[needsPlacementIndices[i] - this.startIndex] as Letter;
+        } else {
+          simulated[
+            this.boardSize * needsPlacementIndices[i] + this.axisIndex
+          ] = this.word[needsPlacementIndices[i] - this.startIndex] as Letter;
+        }
+      }
+
+      // check surrounding letters and the words they make up in the simulated board
+      for (let i of needsPlacementIndices) {
+        let testWord = new Play(
+          simulated,
+          this.boardSize,
+          this.boardBase,
+          0,
+          rackCopy,
+          !this.isHorizontal, // intentionally reversed
+          i, // intentionally switched from axisIndex
+          this.axisIndex,
+          false
+        );
+        if (!testWord.isValid) {
+          return;
+        }
+      }
+
+      this.isValid = true;
+      this.playerRackAfter = [...rackCopy];
+      this.boardLettersAfter = [...simulated];
     } else {
-      this.playerRackAfter = playerRack;
-      this.playerRackBefore = [...playerRack];
+      // We only have three types of plays
+      // 1. current play
+      // 2. intended play
+      // 3. test play (see testWord in the else if branch just above)
+
+      // so for the sake of that test play, we can just check if the word is in the dictionary (which is already checked)
+      this.isValid = true;
+    }
+    // endregion
+
+    // region calculate score
+    if (calculateScore && !isCurrentPlay) {
+      // based on https://discord.com/channels/880689902411452416/917600020591681616/940671620798894160
+      // Every tile in your active word, multiplied by any squares you played onto like 3× letter or 2× word, all times (1 + 0.2×#kills)
       for (const letter of this.word) {
-        this.playerRackBefore.push(letter as Letter);
+        this.score += tileValues(letter as Letter);
+      }
+      let baseSlice = this.mySlice(this.boardBase);
+      let wordBonus = 1;
+      let tilesPlayed = 0;
+      for (let i = this.startIndex; i < this.endIndex; i++) {
+        let boardLetter = letterSlice[i];
+        if (boardLetter !== undefined) continue; // we didn't play this letter so no bonus for it
+        tilesPlayed++;
+        let bonus = baseSlice[i];
+        if (bonus === undefined) continue; // no bonus for this letter
+        if (["3x_letter", "5x_letter"].includes(bonus)) {
+          let letter = this.word[i - this.startIndex] as Letter;
+          let letterBonus = bonus === "3x_letter" ? 2 : 4; // we already have the letter value in there once
+          this.score += tileValues(letter) * letterBonus;
+        } else if (["2x_word", "3x_word"].includes(bonus)) {
+          wordBonus *= bonus === "2x_word" ? 2 : 3;
+        }
+      }
+      this.score *= wordBonus;
+      this.score *= 1 + 0.2 * playerKillsBefore;
+
+      // Plus every tile at face value for other words formed by your play
+      for (const play of this.findPlaysAcross()) {
+        if (play.word.length === 1) continue;
+        for (const letter of play.word) {
+          this.score += tileValues(letter as Letter);
+        }
+      }
+
+      // Plus 50 per kill achieved by that play
+      this.score += numberOfKills * 50;
+
+      // Plus 2^(L-2) where L is the number of tiles you played, if L >= 4
+      if (tilesPlayed >= 4) {
+        this.score += Math.pow(2, tilesPlayed - 2);
+      }
+
+      // Plus (2L-6)^3 where L is the number of tiles you played, if L >= 4 and you emptied your rack with that play
+      if (tilesPlayed >= 4 && this.playerRackAfter.length === 0) {
+        this.score += Math.pow(2 * tilesPlayed - 6, 3);
       }
     }
+    // endregion
+
+    // region generate a reverse play
+    if (this.word.length === 1 && !this.isHorizontal) {
+      this.reversePlay = new Play(
+        boardLetters,
+        boardSize,
+        boardBase,
+        playerKillsBefore,
+        playerRackBefore,
+        !isHorizontal,
+        middleIndex,
+        axisIndex,
+        false,
+        true
+      );
+    }
+    // endregion
   }
 
   mySlice<T>(
-    getSliceOf: SparseArray<T> = this.letters as SparseArray<T>
+    getSliceOf: SparseArray<T> = this.boardLetters as SparseArray<T>
   ): SparseArray<T> {
     if (this.isHorizontal) {
       return horizontalSlice(getSliceOf, this.boardSize, this.axisIndex);
@@ -135,115 +276,21 @@ export class Play {
     }
   }
 
-  isInDictionary() {
-    if (this.word.length === 1) return true;
-    return words.includes(this.word);
-  }
-
-  lastIsValid: boolean | null = null;
-
-  /**
-   * Returns whether this word can be placed on the board
-   */
-  isValidToPlay(): SimulationResult {
-    if (!this.isInDictionary()) {
-      this.lastIsValid = false;
-      return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
-    }
-
-    let rackCopy = [...this.playerRackBefore];
-
-    // check if the board is free of other letters
-    let s = this.mySlice();
-    let needsPlacementIndices = [];
-    for (let i = this.startIndex; i < this.endIndex; i++) {
-      // check if the spot is free or if it is the same letter
-      if (s[i] !== undefined && s[i] !== this.word[i - this.startIndex]) {
-        this.lastIsValid = false;
-        return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
-      } else if (s[i] === undefined) {
-        needsPlacementIndices.push(i);
-        // remove the letter from rack copy
-        let letterIndex = rackCopy.indexOf(
-          this.word[i - this.startIndex] as Letter
-        );
-        if (letterIndex !== -1) {
-          rackCopy.splice(letterIndex, 1);
-        } else {
-          this.lastIsValid = false;
-          return { isValid: false, rackAfterPlay: null, boardAfterPlay: null };
-        }
-      }
-    }
-
-    // if the word can be placed, simulate placement
-    let simulated = [...this.letters];
-    for (let i = 0; i < needsPlacementIndices.length; i++) {
-      if (this.isHorizontal) {
-        simulated[this.boardSize * this.axisIndex + needsPlacementIndices[i]] =
-          this.word[needsPlacementIndices[i] - this.startIndex] as Letter;
-      } else {
-        simulated[this.boardSize * needsPlacementIndices[i] + this.axisIndex] =
-          this.word[needsPlacementIndices[i] - this.startIndex] as Letter;
-      }
-    }
-
-    // check surrounding letters and the words they make up in the simulated board
-    for (let i of needsPlacementIndices) {
-      let testWord = new Play(
-        simulated,
-        this.boardSize,
-        this.boardBase,
-        this.playerKillsBefore,
-        [...rackCopy],
-        !this.isHorizontal, // intentionally reversed
-        i, // intentionally switched from axisIndex
-        this.axisIndex, // use our letter for this word's middle
-        null
-      );
-      if (!testWord.isInDictionary()) {
-        this.lastIsValid = false;
-        return {
-          isValid: false,
-          rackAfterPlay: [...rackCopy],
-          boardAfterPlay: null,
-        };
-      }
-    }
-
-    this.lastIsValid = true;
-    return {
-      isValid: true,
-      rackAfterPlay: [...rackCopy],
-      boardAfterPlay: [...simulated],
-    };
-  }
-
-  getSlicesAcross() {
-    let rv = [];
-    let sliceFunction = this.isHorizontal ? verticalSlice : horizontalSlice;
-    for (let i = this.startIndex; i < this.endIndex; i++) {
-      rv.push(sliceFunction(this.letters, this.boardSize, i));
-    }
-    return rv;
-  }
-
   findPlaysAcross() {
-    let simulationResult = this.isValidToPlay();
-    if (!simulationResult.isValid) return [];
+    if (!this.isValid) return []; // doubt this function is ever called if the play is invalid
     let rv = [];
     for (let i = this.startIndex; i < this.endIndex; i++) {
       rv.push(
         new Play(
-          simulationResult.boardAfterPlay!,
+          this.boardLettersAfter,
           this.boardSize,
           this.boardBase,
-          this.playerKillsBefore + this.getNumberOfKills(),
-          [...this.playerRackAfter],
+          this.playerKillsAfter,
+          this.playerRackAfter,
           !this.isHorizontal,
           i,
           this.axisIndex,
-          null
+          false
         )
       );
     }
@@ -253,7 +300,7 @@ export class Play {
   /**
    * Returns all the words this word could be expanded into
    */
-  *getExpansionOptions(): Generator<ExpansionOption> {
+  *getExpansionOptions(): Generator<Play> {
     if (this.playerRackAfter.length === 0) return [];
 
     let re = sliceToRegex(
@@ -270,14 +317,16 @@ export class Play {
           let playObj: Play;
           try {
             playObj = new Play(
-              this.letters,
+              this.boardLetters,
               this.boardSize,
               this.boardBase,
-              this.playerKillsBefore,
-              [...this.playerRackAfter],
+              this.playerKillsAfter,
+              this.playerRackAfter,
               this.isHorizontal,
               this.axisIndex,
               this.startIndex,
+              true,
+              false,
               {
                 word,
                 startIndex: startIndex,
@@ -286,98 +335,15 @@ export class Play {
           } catch (e) {
             continue;
           }
-          if (playObj.lastIsValid === true) {
-            yield {
-              play: playObj,
-              remainingLetters: playObj.playerRackAfter,
-            };
+          if (playObj.isValid) {
+            yield playObj;
           }
         }
       }
     }
-  }
 
-  getReversed(): Play {
-    if (this.word.length !== 1) Error("Can only reverse single letter words");
-    return new Play(
-      this.letters,
-      this.boardSize,
-      this.boardBase,
-      this.playerKillsBefore,
-      [...this.playerRackAfter],
-      !this.isHorizontal,
-      this.startIndex,
-      this.axisIndex,
-      null
-    );
-  }
-
-  isSameWordSamePosition(other: Play) {
-    return (
-      this.isHorizontal === other.isHorizontal &&
-      this.startIndex === other.startIndex &&
-      this.axisIndex === other.axisIndex &&
-      this.word === other.word
-    );
-  }
-
-  getNumberOfKills() {
-    // TODO: implement
-    return 0;
-  }
-
-  getScore() {
-    if (this.word.length === 1) return 0; // starting words don't have a score
-
-    // based on https://discord.com/channels/880689902411452416/917600020591681616/940671620798894160
-    // Every tile in your active word, multiplied by any squares you played onto like 3× letter or 2× word, all times (1 + 0.2×#kills)
-    let rv = 0;
-    for (const letter of this.word) {
-      rv += tileValues(letter as Letter);
-    }
-    let baseSlice = this.mySlice(this.boardBase);
-    let letterSlice = this.mySlice(this.letters);
-    let wordBonus = 1;
-    let tilesPlayed = 0;
-    for (let i = this.startIndex; i < this.endIndex; i++) {
-      let boardLetter = letterSlice[i];
-      if (boardLetter !== undefined) continue; // we didn't play this letter so no bonus for it
-      tilesPlayed++;
-      let bonus = baseSlice[i];
-      if (bonus === undefined) continue; // no bonus for this letter
-      if (["3x_letter", "5x_letter"].includes(bonus)) {
-        let letter = this.word[i - this.startIndex] as Letter;
-        let letterBonus = bonus === "3x_letter" ? 2 : 4; // we already have the letter value in there once
-        rv += tileValues(letter) * letterBonus;
-      } else if (["2x_word", "3x_word"].includes(bonus)) {
-        wordBonus *= bonus === "2x_word" ? 2 : 3;
-      }
-    }
-    rv *= wordBonus;
-    rv *= 1 + 0.2 * this.playerKillsBefore;
-
-    // Plus every tile at face value for other words formed by your play
-    for (const play of this.findPlaysAcross()) {
-      if (play.word.length === 1) continue;
-      for (const letter of play.word) {
-        rv += tileValues(letter as Letter);
-      }
-    }
-
-    // Plus 50 per kill achieved by that play
-    rv += this.getNumberOfKills() * 50;
-
-    // Plus 2^(L-2) where L is the number of tiles you played, if L >= 4
-    if (tilesPlayed >= 4) {
-      rv += Math.pow(2, tilesPlayed - 2);
-    }
-
-    // Plus (2L-6)^3 where L is the number of tiles you played, if L >= 4 and you emptied your rack with that play
-    if (tilesPlayed >= 4 && this.playerRackAfter.length === 0) {
-      rv += Math.pow(2 * tilesPlayed - 6, 3);
-    }
-
-    return rv;
+    if (this.reversePlay !== undefined)
+      yield* this.reversePlay.getExpansionOptions();
   }
 }
 
@@ -399,8 +365,7 @@ export function findCurrentlyPlayedWord(game: Game, gameStep: GameStep) {
     gameStep.player.letters,
     isHorizontal,
     axisIndex,
-    middleIndex,
-    null
+    middleIndex
   );
 }
 
@@ -431,7 +396,7 @@ export async function getAllPlaysRecursively(
     for (const child of await walkGeneratorWhileYielding(
       play.getExpansionOptions()
     )) {
-      let word = child.play.word;
+      let word = child.word;
       while (
         rv.children[word] !== undefined ||
         rv.resolvableChildren[word] !== undefined
@@ -440,7 +405,7 @@ export async function getAllPlaysRecursively(
       }
 
       rv.resolvableChildren[word] = () => {
-        return getAllPlaysRecursively(child.play);
+        return getAllPlaysRecursively(child);
       };
     }
   }
@@ -450,19 +415,10 @@ export async function getAllPlaysRecursively(
 export async function findAllPlays(game: Game, gameStep: GameStep) {
   let playerWord = findCurrentlyPlayedWord(game, gameStep);
   let startingPlays = [playerWord];
-  if (playerWord.word.length === 1) {
-    startingPlays = []; // we are forced to expand the word anyway
-    for (const option of await walkGeneratorWhileYielding(
-      playerWord.getReversed().getExpansionOptions()
-    )) {
-      startingPlays.push(option.play);
-      await new Promise((resolve) => setTimeout(resolve));
-    }
-  }
   for (const option of await walkGeneratorWhileYielding(
     playerWord.getExpansionOptions()
   )) {
-    startingPlays.push(option.play);
+    startingPlays.push(option);
     await new Promise((resolve) => setTimeout(resolve));
   }
 
@@ -491,7 +447,7 @@ export async function findAllPlays(game: Game, gameStep: GameStep) {
 export function scoreOfPlays(plays: Play[]) {
   let rv = 0;
   for (const play of plays) {
-    rv += play.getScore();
+    rv += play.score;
   }
   return rv;
 }
@@ -512,7 +468,15 @@ export async function findBingos(
   let keyLengthSort = (a: string, b: string) => {
     let wordA = a.replaceAll(".", "");
     let wordB = b.replaceAll(".", "");
-    return wordA.length - wordB.length;
+    let wordAScore = 0;
+    let wordBScore = 0;
+    for (let i = 0; i < wordA.length; i++) {
+      wordAScore += tileValues(wordA[i] as Letter);
+    }
+    for (let i = 0; i < wordB.length; i++) {
+      wordBScore += tileValues(wordB[i] as Letter);
+    }
+    return wordAScore - wordBScore;
   };
   let keyResolver = async (original: string[], keys: string[]) => {
     for (const key of keys) {
