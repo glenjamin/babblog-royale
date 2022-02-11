@@ -15,6 +15,7 @@ import PlayerList from "./PlayerList";
 import Words from "./Words";
 
 import useAppReducer from "./reducer";
+import ScreenGrabber from "./ScreenGrabber";
 
 function App() {
   const [state, actions] = useAppReducer();
@@ -25,6 +26,7 @@ function App() {
     selectedPlayer,
     showImportDialog,
     showHotkeyHelp,
+    isRecording,
   } = state;
 
   return (
@@ -40,7 +42,11 @@ function App() {
         games={games}
         activeGameID={game.id}
       />
-      <Hotkeys showHelp={showHotkeyHelp} {...actions} />
+      <Hotkeys
+        showHelp={showHotkeyHelp}
+        isRecording={isRecording}
+        {...actions}
+      />
       <Container fluid>
         <Row>
           <Col>
@@ -64,6 +70,7 @@ function App() {
                     stepForwards={actions.stepForwards}
                     stepTo={actions.chooseStep}
                     stepMeForwards={actions.stepMeForwards}
+                    disabled={isRecording}
                   />
                   <PlayerState
                     levels={game.levels}
@@ -86,6 +93,17 @@ function App() {
                     stepTo={actions.chooseStep}
                   />
                 </Stack>
+              </Tab>
+              <Tab eventKey="export" title="Export GIF (beta)">
+                <ScreenGrabber
+                  step={gameStep}
+                  max={game.timeline.length - 1}
+                  stepForwards={actions.stepForwards}
+                  stepTo={actions.chooseStep}
+                  stepMeForwards={actions.stepMeForwards}
+                  isRecording={isRecording}
+                  setIsRecording={actions.setIsRecording}
+                />
               </Tab>
             </Tabs>
           </Col>

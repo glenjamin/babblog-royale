@@ -17,7 +17,12 @@ export default function GameGrid({
   const range = Array(size).fill(0);
   const state = game.timeline[step];
   return (
-    <table cellSpacing={0} cellPadding={0} className={styles.board}>
+    <table
+      id="game-grid"
+      cellSpacing={0}
+      cellPadding={0}
+      className={styles.board}
+    >
       <tbody>
         {range.map((_, row) => (
           <tr key={row}>

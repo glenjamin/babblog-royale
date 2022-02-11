@@ -11,6 +11,7 @@ interface GameStepperProps {
   stepTo: (step: number) => void;
   stepForwards: () => void;
   stepMeForwards: () => void;
+  disabled: boolean;
 }
 function GameStepper(props: GameStepperProps): JSX.Element {
   const {
@@ -21,19 +22,20 @@ function GameStepper(props: GameStepperProps): JSX.Element {
     stepTo,
     stepForwards,
     stepMeForwards,
+    disabled,
   } = props;
   return (
     <>
       <Row className="justify-content-sm-center">
         <Col sm="auto">
-          <Pagination>
+          <Pagination className="mb-1">
             <Pagination.First
-              disabled={step === 0}
+              disabled={step === 0 || disabled}
               onClick={stepMeBack}
               title="My Last (up)"
             />
             <Pagination.Prev
-              disabled={step === 0}
+              disabled={step === 0 || disabled}
               onClick={stepBack}
               title="Back (left)"
             />
@@ -42,19 +44,19 @@ function GameStepper(props: GameStepperProps): JSX.Element {
               Step {step + 1} / {max + 1}
             </Pagination.Item>
             <Pagination.Next
-              disabled={step === max}
+              disabled={step === max || disabled}
               onClick={stepForwards}
               title="Next (right)"
             />
             <Pagination.Last
-              disabled={step === max}
+              disabled={step === max || disabled}
               onClick={stepMeForwards}
               title="My Next (down)"
             />
           </Pagination>
         </Col>
       </Row>
-      <Row className="justify-content-sm-center">
+      <Row className="justify-content-sm-center border-bottom">
         <Col sm="auto">
           <Form.Range
             min="0"
