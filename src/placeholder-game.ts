@@ -97,24 +97,16 @@ function placeWord(
   });
 }
 
-[
-  "the",
-  "first",
-  "and",
-  "original",
-  "babble",
-  "royale",
-  "player",
-  "log",
-  "file",
-  "viewer",
-  "made",
-  "by",
-  "glenjamin",
-  "aka",
-  "glenathan",
-].forEach((word, i) => {
-  placeWord(1, 1 + i * 2, word, "across", i as PlayerIndex);
-});
+/**
+ * Game setup below here
+ */
+placeholderGame.timeline[0].player.letters = ["a"];
+placeholderGame.timeline[0].player.items = ["medkit"];
+placeholderGame.timeline[0].player.money = 2;
+
+placeWord(0, 0, "babble", "across", 0);
+placeWord(0, 2, "royale", "across");
+placeWord(4, 3, "achievement", "across", 1);
+placeWord(5, 4, "ho", "down");
 
 export default placeholderGame;

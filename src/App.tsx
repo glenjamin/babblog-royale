@@ -15,17 +15,20 @@ import PlayerList from "./PlayerList";
 import Words from "./Words";
 
 import useAppReducer from "./reducer";
+import placeholderGame from "./placeholder-game";
 
 function App() {
   const [state, actions] = useAppReducer();
   const {
     games,
-    game,
+    game: stateGame,
     gameStep,
     selectedPlayer,
     showImportDialog,
     showHotkeyHelp,
   } = state;
+
+  const game = stateGame.id === 0 ? placeholderGame : stateGame;
 
   return (
     <>
