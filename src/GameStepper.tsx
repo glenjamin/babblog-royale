@@ -4,7 +4,7 @@ import Form from "react-bootstrap/Form";
 import Pagination from "react-bootstrap/Pagination";
 
 interface GameStepperProps {
-  step: number;
+  currentStep: number;
   max: number;
   stepMeBack: () => void;
   stepBack: () => void;
@@ -14,7 +14,7 @@ interface GameStepperProps {
 }
 function GameStepper(props: GameStepperProps): JSX.Element {
   const {
-    step,
+    currentStep,
     max,
     stepMeBack,
     stepBack,
@@ -28,26 +28,26 @@ function GameStepper(props: GameStepperProps): JSX.Element {
         <Col sm="auto">
           <Pagination>
             <Pagination.First
-              disabled={step === 0}
+              disabled={currentStep === 0}
               onClick={stepMeBack}
               title="My Last (up)"
             />
             <Pagination.Prev
-              disabled={step === 0}
+              disabled={currentStep === 0}
               onClick={stepBack}
               title="Back (left)"
             />
             <Pagination.Item disabled>
               {/* UI is 1-indexed, but internals are 0-indexed */}
-              Step {step + 1} / {max + 1}
+              Step {currentStep + 1} / {max + 1}
             </Pagination.Item>
             <Pagination.Next
-              disabled={step === max}
+              disabled={currentStep === max}
               onClick={stepForwards}
               title="Next (right)"
             />
             <Pagination.Last
-              disabled={step === max}
+              disabled={currentStep === max}
               onClick={stepMeForwards}
               title="My Next (down)"
             />
@@ -59,7 +59,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
           <Form.Range
             min="0"
             max={max}
-            value={step}
+            value={currentStep}
             onChange={(e) => stepTo(Number(e.target.value))}
           />
         </Col>
