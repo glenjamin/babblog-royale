@@ -1,10 +1,10 @@
-import { Bonus, Game, Letter, SparseArray } from "./types";
+import { Bonus, Game, Letter, PlayerIndex, SparseArray } from "./types";
 import words from "./words.json";
 import {
   horizontalSlice,
   isValidMatch,
   sliceToRegex,
-  verticalSlice,
+  verticalSlice
 } from "./utils/gameBoardHelper";
 import { tileValues } from "./constants";
 
@@ -35,23 +35,27 @@ export class Play {
   readonly startIndex: number;
   readonly endIndex: number;
   readonly isInDictionary: boolean;
+  /** Amount of players this play killed */
+  readonly killedCount: number;
   readonly score: number = 0;
   readonly boardLettersAfter: SparseArray<Letter>;
   readonly playerKillsAfter: number;
   readonly knownChildren: Play[] = [];
-  readonly lettersPlayed: string;
+  private readonly isCurrentPlay: boolean;
+  private readonly reversePlay?: Play;
+
 
   // properties of the game
   private readonly boardLetters: SparseArray<Letter>;
   private readonly boardSize: number;
   private readonly boardBase: SparseArray<Bonus>;
-  private readonly isCurrentPlay: boolean;
-  private readonly reversePlay?: Play;
+  private readonly owners: SparseArray<PlayerIndex>;
 
   constructor(
     boardLetters: SparseArray<Letter>,
     boardSize: number,
     boardBase: SparseArray<Bonus>,
+    owners: SparseArray<PlayerIndex>,
     playerKillsBefore: number,
     playerRackBefore: Letter[],
     isHorizontal: boolean,
@@ -67,6 +71,7 @@ export class Play {
     this.boardLetters = boardLetters;
     this.boardSize = boardSize;
     this.boardBase = boardBase;
+    this.owners = owners;
     this.isCurrentPlay = isCurrentPlay;
     this.isHorizontal = isHorizontal;
     this.axisIndex = axisIndex;
@@ -114,18 +119,52 @@ export class Play {
     // endregion
 
     // region see if the play killed any other players
-    // TODO: implement this
-    let numberOfKills = 0;
-    this.playerKillsAfter = playerKillsBefore + numberOfKills;
+    let killedPlayerIndices: Set<PlayerIndex> = new Set();
+    for (let i = this.startIndex; i < this.endIndex; i++) {
+      // get coords of the letter
+      let x, y;
+      if (this.isHorizontal) {
+        x = i;
+        y = this.axisIndex;
+      } else {
+        x = this.axisIndex;
+        y = i;
+      }
+      let index = x + y * this.boardSize;
+      // see if directly neighbouring it is a player
+      // in x direction
+      for (let d of [-1, 0, 1]) {
+        if (owners[index + d] !== undefined) {
+          killedPlayerIndices.add(owners[index + d]!);
+        }
+      }
+      // same in y direction
+      for (let d of [-this.boardSize, 0, this.boardSize]) {
+        if (owners[index + d] !== undefined) {
+          killedPlayerIndices.add(owners[index + d]!);
+        }
+      }
+    }
+
+    this.killedCount = killedPlayerIndices.size;
+    this.playerKillsAfter = playerKillsBefore + this.killedCount;
+
+    // remove killed players from the board
+    this.owners = [...owners].map((owner) => {
+      if (owner === undefined || killedPlayerIndices.has(owner)) {
+        return undefined;
+      } else {
+        return owner;
+      }
+    });
     // endregion
 
-    let playedIndices = [];
+    let playedIndices = []; // calculated while checking validity, used to calculate score
 
     // region check the validity of the play
     this.isValid = false;
     this.playerRackAfter = playerRackBefore;
     this.boardLettersAfter = [...boardLetters];
-    this.lettersPlayed = "";
 
     this.isInDictionary = this.word.length === 1 || words.includes(this.word);
     if (!this.isInDictionary) {
@@ -153,7 +192,6 @@ export class Play {
           let letterIndex = rackCopy.indexOf(letter);
           if (letterIndex !== -1) {
             rackCopy.splice(letterIndex, 1);
-            this.lettersPlayed += letter;
           } else {
             return;
           }
@@ -178,6 +216,7 @@ export class Play {
           simulated,
           this.boardSize,
           this.boardBase,
+          this.owners,
           0,
           rackCopy,
           !this.isHorizontal, // intentionally reversed
@@ -241,7 +280,7 @@ export class Play {
       }
 
       // Plus 50 per kill achieved by that play
-      this.score += numberOfKills * 50;
+      this.score += this.killedCount * 50;
 
       // Plus 2^(L-2) where L is the number of tiles you played, if L >= 4
       if (tilesPlayed >= 4) {
@@ -261,6 +300,7 @@ export class Play {
         boardLetters,
         boardSize,
         boardBase,
+        owners,
         playerKillsBefore,
         playerRackBefore,
         !isHorizontal,
@@ -272,7 +312,6 @@ export class Play {
     }
     // endregion
 
-    this.lettersPlayed = Array.from(this.lettersPlayed).sort().join("");
   }
 
   mySlice<T>(
@@ -295,6 +334,7 @@ export class Play {
           this.boardLettersAfter,
           this.boardSize,
           this.boardBase,
+          this.owners,
           this.playerKillsAfter,
           this.playerRackAfter,
           !this.isHorizontal,
@@ -310,7 +350,7 @@ export class Play {
   /**
    * Returns all the words this word could be expanded into
    */
-  *getExpansionOptions(): Generator<Play> {
+  * getExpansionOptions(): Generator<Play> {
     if (this.playerRackAfter.length === 0) return [];
     if (this.isCurrentPlay) yield this;
 
@@ -332,6 +372,7 @@ export class Play {
               this.boardLetters,
               this.boardSize,
               this.boardBase,
+              this.owners,
               this.playerKillsAfter,
               this.playerRackAfter,
               this.isHorizontal,
@@ -341,7 +382,7 @@ export class Play {
               false,
               {
                 word,
-                startIndex: startIndex,
+                startIndex: startIndex
               }
             );
           } catch (e) {
@@ -358,7 +399,7 @@ export class Play {
       yield* this.reversePlay.getExpansionOptions();
   }
 
-  async *findChildren() {
+  async* findChildren() {
     // first yield already known children
     for (const child of this.knownChildren) {
       await waitEventLoop();
@@ -378,9 +419,10 @@ export class Play {
     }
   }
 
-  async *findRackClears(
+  async* findRackClears(
     numberOfWordsSearched: number[] = [0],
-    callback: () => void = () => {},
+    callback: () => void = () => {
+    },
     maxNumberOfWords: number = 2000,
     tryRacksUntil: number = 3,
     depthRemaining = 3,
@@ -447,6 +489,7 @@ export function findCurrentlyPlayedWord(game: Game, currentStep: number) {
     gameStep.letters,
     game.board.size,
     game.board.base,
+    gameStep.owners,
     gameStep.metrics[0].kills,
     gameStep.player.letters,
     isHorizontal,
