@@ -325,6 +325,7 @@ export class Play {
         for (const match of Array.from(word.matchAll(wordOnlyRe))) {
           // find start index of the word
           let startIndex = this.startIndex - match.index!;
+          if (startIndex < 0) continue;
           let playObj: Play;
           try {
             playObj = new Play(
@@ -379,17 +380,20 @@ export class Play {
 
   async *findRackClears(
     numberOfWordsSearched: number[] = [0],
+    callback: () => void = () => {},
     maxNumberOfWords: number = 2000,
     tryRacksUntil: number = 3,
     depthRemaining = 3,
     cantPlayRacks: { [rack: string]: number } = {}
   ): AsyncGenerator<Play[]> {
+    numberOfWordsSearched[0]++;
+    callback();
+
     if (this.playerRackAfter.length === 0) {
       yield Promise.resolve([this]);
       return;
     }
 
-    numberOfWordsSearched[0]++;
     if (numberOfWordsSearched[0] > maxNumberOfWords) return;
     const playerRack = [...this.playerRackAfter].sort().join("");
     if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
@@ -406,6 +410,7 @@ export class Play {
         if (child.done) break;
         const childBingoGenerator = child.value.findRackClears(
           numberOfWordsSearched,
+          callback,
           maxNumberOfWords,
           tryRacksUntil,
           i - 1,
