@@ -394,10 +394,11 @@ export class Play {
     const playerRack = [...this.playerRackAfter].sort().join("");
     if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
     if (depthRemaining === 0) return;
-    let resultedInBingo = false;
+    let resultedInClear = false;
 
     // breadth first search
     for (let i = 1; i <= depthRemaining; i++) {
+      if (resultedInClear) break; // found a clear at previous depth, no need to search deeper
       const childrenGenerator = this.findChildren();
       while (true) {
         await waitEventLoop();
@@ -415,12 +416,12 @@ export class Play {
           const bingo = await childBingoGenerator.next();
           if (bingo.done) break;
           yield Promise.resolve([this, ...bingo.value]);
-          resultedInBingo = true;
+          resultedInClear = true;
         }
       }
     }
 
-    if (!resultedInBingo) {
+    if (!resultedInClear) {
       cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
     }
   }
