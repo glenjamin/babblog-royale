@@ -15,6 +15,8 @@ import PlayerList from "./PlayerList";
 import Words from "./Words";
 
 import useAppReducer from "./reducer";
+import { findCurrentlyPlayedWord, Play, playsScore } from "./Play";
+import Button from "react-bootstrap/esm/Button";
 
 function App() {
   const [state, actions] = useAppReducer();
@@ -69,6 +71,55 @@ function App() {
                     levels={game.levels}
                     {...game.timeline[currentStep].player}
                   />
+                  <Button
+                    id="bingoFinder"
+                    onClick={async () => {
+                      const maxWords = 2000;
+                      let thisButton = document.getElementById("bingoFinder");
+                      thisButton!.innerHTML =
+                        "Finding a rack clear<br>Please wait...";
+                      let currentPlay = findCurrentlyPlayedWord(
+                        game,
+                        currentStep
+                      );
+                      let allBingos: Array<Play[]> = [];
+                      let wordCounter = [0];
+                      const changeText = (lastBingo: Play[]) => {
+                        allBingos.sort((a, b) => playsScore(b) - playsScore(a));
+                        const bestText =
+                          allBingos.length > 0
+                            ? `Best: ${allBingos[0]
+                                .map((b) => b.word.toUpperCase())
+                                .join(" -> ")} (${playsScore(allBingos[0])}) `
+                            : "Couldn't find a rack clear";
+                        const lastText =
+                          lastBingo.length > 0
+                            ? `${lastBingo
+                                .map((b) => b.word.toUpperCase())
+                                .join(" -> ")} (${playsScore(
+                                lastBingo
+                              )}) (${wordCounter}/${maxWords} different words tried)`
+                            : "Ready to find another";
+                        thisButton!.innerHTML = `${bestText}<br>${lastText}`;
+                      };
+                      const bingoGenerator = currentPlay.findRackClears(
+                        wordCounter,
+                        maxWords
+                      );
+                      while (true) {
+                        const bingo = await bingoGenerator.next();
+                        if (bingo.done) {
+                          changeText([]);
+                          break;
+                        }
+                        allBingos.push(bingo.value);
+                        changeText(bingo.value);
+                      }
+                    }}
+                  >
+                    Find a rack clear<br></br>
+                    (This is not final UI)
+                  </Button>
                   <PlayerList
                     players={game.players}
                     selectedPlayer={selectedPlayer}
