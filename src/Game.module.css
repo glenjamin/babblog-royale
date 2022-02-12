@@ -2,6 +2,40 @@
   margin: 1px;
 }
 
+.cellSVG {
+  cursor: default;
+  --cell-bg: #eee;
+  --cell-fg: #eee;
+}
+.cellSVG :global(rect) {
+  fill: var(--cell-bg);
+}
+.cellSVG :global(text) {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  font-size: 1rem;
+  font-weight: 400;
+  fill: var(--cell-fg);
+}
+
+.emptySVG {
+  composes: cellSVG;
+}
+
+.letterSVG {
+  composes: cellSVG;
+  --cell-bg: #777;
+  --cell-fg: #eee;
+}
+.highlight {
+  filter: drop-shadow(0 0 8px var(--cell-bg));
+}
+
+.bonusSVG {
+  composes: cellSVG;
+}
+
 .cell {
   width: 25px;
   height: 25px;
