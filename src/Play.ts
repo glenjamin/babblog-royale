@@ -1,10 +1,11 @@
 import { Bonus, Game, Letter, PlayerIndex, SparseArray } from "./types";
 import words from "./words.json";
 import {
+  canReachPlayer,
   horizontalSlice,
   isValidMatch,
   sliceToRegex,
-  verticalSlice
+  verticalSlice,
 } from "./utils/gameBoardHelper";
 import { tileValues } from "./constants";
 
@@ -43,7 +44,6 @@ export class Play {
   readonly knownChildren: Play[] = [];
   private readonly isCurrentPlay: boolean;
   private readonly reversePlay?: Play;
-
 
   // properties of the game
   private readonly boardLetters: SparseArray<Letter>;
@@ -134,13 +134,13 @@ export class Play {
       // see if directly neighbouring it is a player
       // in x direction
       for (let d of [-1, 0, 1]) {
-        if (owners[index + d] !== undefined) {
+        if (![undefined, 0].includes(owners[index + d])) {
           killedPlayerIndices.add(owners[index + d]!);
         }
       }
       // same in y direction
       for (let d of [-this.boardSize, 0, this.boardSize]) {
-        if (owners[index + d] !== undefined) {
+        if (![undefined, 0].includes(owners[index + d])) {
           killedPlayerIndices.add(owners[index + d]!);
         }
       }
@@ -311,7 +311,6 @@ export class Play {
       );
     }
     // endregion
-
   }
 
   mySlice<T>(
@@ -350,7 +349,7 @@ export class Play {
   /**
    * Returns all the words this word could be expanded into
    */
-  * getExpansionOptions(): Generator<Play> {
+  *getExpansionOptions(): Generator<Play> {
     if (this.playerRackAfter.length === 0) return [];
     if (this.isCurrentPlay) yield this;
 
@@ -382,7 +381,7 @@ export class Play {
               false,
               {
                 word,
-                startIndex: startIndex
+                startIndex: startIndex,
               }
             );
           } catch (e) {
@@ -399,7 +398,7 @@ export class Play {
       yield* this.reversePlay.getExpansionOptions();
   }
 
-  async* findChildren() {
+  async *findChildren() {
     // first yield already known children
     for (const child of this.knownChildren) {
       await waitEventLoop();
@@ -419,10 +418,9 @@ export class Play {
     }
   }
 
-  async* findRackClears(
+  async *findRackClears(
     numberOfWordsSearched: number[] = [0],
-    callback: () => void = () => {
-    },
+    callback: () => void = () => {},
     maxNumberOfWords: number = 2000,
     tryRacksUntil: number = 3,
     depthRemaining = 3,
@@ -460,9 +458,9 @@ export class Play {
         );
         while (true) {
           await waitEventLoop();
-          const bingo = await childBingoGenerator.next();
-          if (bingo.done) break;
-          yield Promise.resolve([this, ...bingo.value]);
+          const clear = await childBingoGenerator.next();
+          if (clear.done) break;
+          yield Promise.resolve([this, ...clear.value]);
           resultedInClear = true;
         }
       }
@@ -470,6 +468,79 @@ export class Play {
 
     if (!resultedInClear) {
       cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
+    }
+  }
+
+  checkIfCanKill() {
+    const x = this.isHorizontal ?  this.startIndex : this.axisIndex;
+    const y = this.isHorizontal ? this.axisIndex : this.startIndex;
+    return canReachPlayer(
+      x,
+      y,
+      this.boardLetters,
+      this.owners,
+      this.boardSize,
+      this.playerRackAfter.length
+    );
+  }
+
+  async *findKills(
+    numberOfWordsSearched: number[] = [0],
+    callback: () => void = () => {},
+    maxNumberOfWords: number = 2000,
+    tryRacksUntil: number = 3,
+    depthRemaining = 3,
+    cantPlayRacks: { [rack: string]: number } = {}
+  ): AsyncGenerator<Play[]> {
+    numberOfWordsSearched[0]++;
+    callback();
+
+    if (!this.checkIfCanKill()) {
+      if (this.killedCount > 0) {
+        yield Promise.resolve([this]);
+      } else {
+        return;
+      }
+    }
+
+    if (numberOfWordsSearched[0] > maxNumberOfWords) return;
+    const playerRack = [...this.playerRackAfter].sort().join("");
+    if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
+    if (depthRemaining === 0) return;
+    let resultedInKill = false; /* this might be unnecessary for kill finding ()
+    might cause us to miss multi-kills *shrug*/
+
+    // breadth first search
+    for (let i = 1; i <= depthRemaining; i++) {
+      if (resultedInKill) break; // found a kill at previous depth, no need to search deeper
+      const childrenGenerator = this.findChildren();
+      while (true) {
+        await waitEventLoop();
+        const child = await childrenGenerator.next();
+        if (child.done) break;
+        const childKillGenerator = child.value.findKills(
+          numberOfWordsSearched,
+          callback,
+          maxNumberOfWords,
+          tryRacksUntil,
+          i - 1,
+          cantPlayRacks
+        );
+        while (true) {
+          await waitEventLoop();
+          const kill = await childKillGenerator.next();
+          if (kill.done) break;
+          yield Promise.resolve([this, ...kill.value]);
+          resultedInKill = true;
+        }
+      }
+    }
+
+    if (!resultedInKill) {
+      cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
+      if (this.killedCount > 0) {
+        yield Promise.resolve([this]);
+      }
     }
   }
 }

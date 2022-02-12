@@ -1,4 +1,4 @@
-import { Letter, SparseArray } from "../types";
+import { Letter, PlayerIndex, SparseArray } from "../types";
 
 export function verticalSlice<T>(
   array: SparseArray<T>,
@@ -92,4 +92,67 @@ export function isValidMatch(
     }
   }
   return playedSomething;
+}
+
+type Direction = "up" | "down" | "left" | "right";
+
+export function canReachPlayer(
+  x: number,
+  y: number,
+  boardLetters: SparseArray<Letter>,
+  owners: SparseArray<PlayerIndex>,
+  boardSize: number,
+  distanceRemaining: number,
+  directionsRemaining: Direction[] = ["up", "down", "left", "right"]
+): boolean {
+  const owner = owners[y * boardSize + x];
+  if (![undefined, 0].includes(owner)) {
+    return true;
+  }
+  if (distanceRemaining === 0) {
+    return false;
+  }
+
+  for (const dir of directionsRemaining) {
+    const newX = x + (dir === "right" ? 1 : dir === "left" ? -1 : 0);
+    const newY = y + (dir === "down" ? 1 : dir === "up" ? -1 : 0);
+    if (newX >= 0 && newX < boardSize && newY >= 0 && newY < boardSize) {
+      // remove opposite direction from directionsRemaining
+      let oppositeDirection: Direction;
+      switch (dir) {
+        case "up":
+          oppositeDirection = "down";
+          break;
+        case "down":
+          oppositeDirection = "up";
+          break;
+        case "left":
+          oppositeDirection = "right";
+          break;
+        case "right":
+          oppositeDirection = "left";
+          break;
+      }
+      const newDirections = directionsRemaining.filter(
+        (d) => d !== oppositeDirection
+      );
+      const removeFromDistance = boardLetters[y * boardSize + x] === undefined
+        ? 1
+        : 0;
+      if (
+        canReachPlayer(
+          newX,
+          newY,
+          boardLetters,
+          owners,
+          boardSize,
+          distanceRemaining - removeFromDistance,
+          newDirections
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
