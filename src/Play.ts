@@ -1,4 +1,4 @@
-import { Bonus, Game, GameStep, Letter, SparseArray } from "./types";
+import { Bonus, Game, Letter, SparseArray } from "./types";
 import words from "./words.json";
 import {
   horizontalSlice,
@@ -8,22 +8,25 @@ import {
 } from "./utils/gameBoardHelper";
 import { tileValues } from "./constants";
 
+async function waitEventLoop() {
+  return new Promise((resolve) => setTimeout(resolve));
+}
+
 type Intention = {
   word: string;
   startIndex: number;
 };
 
-export type NestedPlay = {
-  thisPlay: Play;
-  children: { [key: string]: NestedPlay };
-  resolvableChildren: { [key: string]: () => Promise<NestedPlay> };
-};
+export function playsScore(plays: Play[]): number {
+  return Math.floor(plays.reduce((score, play) => score + play.score, 0));
+}
 
 export class Play {
   // these are first so they show up first in console
   /** The letters that make up this play */
   readonly word: string;
   /** the rack after this play was performed */
+  readonly playerRackAfter: Letter[];
   readonly isValid: boolean;
   // other properties of the play
   readonly isHorizontal: boolean;
@@ -33,14 +36,16 @@ export class Play {
   readonly endIndex: number;
   readonly isInDictionary: boolean;
   readonly score: number = 0;
-  readonly playerRackAfter: Letter[];
   readonly boardLettersAfter: SparseArray<Letter>;
   readonly playerKillsAfter: number;
+  readonly knownChildren: Play[] = [];
+  readonly lettersPlayed: string;
 
   // properties of the game
   private readonly boardLetters: SparseArray<Letter>;
   private readonly boardSize: number;
   private readonly boardBase: SparseArray<Bonus>;
+  private readonly isCurrentPlay: boolean;
   private readonly reversePlay?: Play;
 
   constructor(
@@ -62,6 +67,7 @@ export class Play {
     this.boardLetters = boardLetters;
     this.boardSize = boardSize;
     this.boardBase = boardBase;
+    this.isCurrentPlay = isCurrentPlay;
     this.isHorizontal = isHorizontal;
     this.axisIndex = axisIndex;
 
@@ -113,10 +119,13 @@ export class Play {
     this.playerKillsAfter = playerKillsBefore + numberOfKills;
     // endregion
 
+    let playedIndices = [];
+
     // region check the validity of the play
     this.isValid = false;
     this.playerRackAfter = playerRackBefore;
     this.boardLettersAfter = [...boardLetters];
+    this.lettersPlayed = "";
 
     this.isInDictionary = this.word.length === 1 || words.includes(this.word);
     if (!this.isInDictionary) {
@@ -129,7 +138,6 @@ export class Play {
     } // don't format this line, I can't code fold
     else if (intended !== null) {
       // check if the board is free of other letters
-      let needsPlacementIndices = [];
       let rackCopy = [...playerRackBefore];
       for (let i = this.startIndex; i < this.endIndex; i++) {
         // check if the spot is free or if it is the same letter
@@ -139,13 +147,13 @@ export class Play {
         ) {
           return;
         } else if (letterSlice[i] === undefined) {
-          needsPlacementIndices.push(i);
+          playedIndices.push(i);
           // remove the letter from rack copy
-          let letterIndex = rackCopy.indexOf(
-            this.word[i - this.startIndex] as Letter
-          );
+          let letter = this.word[i - this.startIndex] as Letter;
+          let letterIndex = rackCopy.indexOf(letter);
           if (letterIndex !== -1) {
             rackCopy.splice(letterIndex, 1);
+            this.lettersPlayed += letter;
           } else {
             return;
           }
@@ -154,20 +162,18 @@ export class Play {
 
       // if the word can be placed, simulate placement
       let simulated = [...this.boardLetters];
-      for (let i = 0; i < needsPlacementIndices.length; i++) {
+      for (let i = 0; i < playedIndices.length; i++) {
         if (this.isHorizontal) {
-          simulated[
-            this.boardSize * this.axisIndex + needsPlacementIndices[i]
-          ] = this.word[needsPlacementIndices[i] - this.startIndex] as Letter;
+          simulated[this.boardSize * this.axisIndex + playedIndices[i]] = this
+            .word[playedIndices[i] - this.startIndex] as Letter;
         } else {
-          simulated[
-            this.boardSize * needsPlacementIndices[i] + this.axisIndex
-          ] = this.word[needsPlacementIndices[i] - this.startIndex] as Letter;
+          simulated[this.boardSize * playedIndices[i] + this.axisIndex] = this
+            .word[playedIndices[i] - this.startIndex] as Letter;
         }
       }
 
       // check surrounding letters and the words they make up in the simulated board
-      for (let i of needsPlacementIndices) {
+      for (let i of playedIndices) {
         let testWord = new Play(
           simulated,
           this.boardSize,
@@ -228,6 +234,7 @@ export class Play {
       // Plus every tile at face value for other words formed by your play
       for (const play of this.findPlaysAcross()) {
         if (play.word.length === 1) continue;
+        if (!playedIndices.includes(play.axisIndex)) continue;
         for (const letter of play.word) {
           this.score += tileValues(letter as Letter);
         }
@@ -264,6 +271,8 @@ export class Play {
       );
     }
     // endregion
+
+    this.lettersPlayed = Array.from(this.lettersPlayed).sort().join("");
   }
 
   mySlice<T>(
@@ -278,6 +287,7 @@ export class Play {
 
   findPlaysAcross() {
     if (!this.isValid) return []; // doubt this function is ever called if the play is invalid
+    if (this.isCurrentPlay) return [this];
     let rv = [];
     for (let i = this.startIndex; i < this.endIndex; i++) {
       rv.push(
@@ -302,6 +312,7 @@ export class Play {
    */
   *getExpansionOptions(): Generator<Play> {
     if (this.playerRackAfter.length === 0) return [];
+    if (this.isCurrentPlay) yield this;
 
     let re = sliceToRegex(
       this.mySlice(),
@@ -345,9 +356,78 @@ export class Play {
     if (this.reversePlay !== undefined)
       yield* this.reversePlay.getExpansionOptions();
   }
+
+  async *findChildren() {
+    // first yield already known children
+    for (const child of this.knownChildren) {
+      await waitEventLoop();
+      yield Promise.resolve(child);
+    }
+
+    // then find new children
+    for (const across of this.findPlaysAcross()) {
+      const generator = across.getExpansionOptions();
+      while (true) {
+        await waitEventLoop();
+        const child = generator.next();
+        if (child.done) break;
+        yield Promise.resolve(child.value);
+        this.knownChildren.push(child.value);
+      }
+    }
+  }
+
+  async *findRackClears(
+    numberOfWordsSearched: number[] = [0],
+    maxNumberOfWords: number = 2000,
+    tryRacksUntil: number = 3,
+    depthRemaining = 3,
+    cantPlayRacks: { [rack: string]: number } = {}
+  ): AsyncGenerator<Play[]> {
+    if (this.playerRackAfter.length === 0) {
+      yield Promise.resolve([this]);
+      return;
+    }
+
+    numberOfWordsSearched[0]++;
+    if (numberOfWordsSearched[0] > maxNumberOfWords) return;
+    const playerRack = [...this.playerRackAfter].sort().join("");
+    if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
+    if (depthRemaining === 0) return;
+    let resultedInBingo = false;
+
+    // breadth first search
+    for (let i = 1; i <= depthRemaining; i++) {
+      const childrenGenerator = this.findChildren();
+      while (true) {
+        await waitEventLoop();
+        const child = await childrenGenerator.next();
+        if (child.done) break;
+        const childBingoGenerator = child.value.findRackClears(
+          numberOfWordsSearched,
+          maxNumberOfWords,
+          tryRacksUntil,
+          i - 1,
+          cantPlayRacks
+        );
+        while (true) {
+          await waitEventLoop();
+          const bingo = await childBingoGenerator.next();
+          if (bingo.done) break;
+          yield Promise.resolve([this, ...bingo.value]);
+          resultedInBingo = true;
+        }
+      }
+    }
+
+    if (!resultedInBingo) {
+      cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
+    }
+  }
 }
 
-export function findCurrentlyPlayedWord(game: Game, gameStep: GameStep) {
+export function findCurrentlyPlayedWord(game: Game, currentStep: number) {
+  let gameStep = game.timeline[currentStep];
   let firstOwner = gameStep.owners.indexOf(0);
   let isHorizontal = gameStep.owners[firstOwner + 1] === 0;
   let axisIndex = Math.floor(firstOwner / game.board.size); // y coordinate
@@ -367,230 +447,4 @@ export function findCurrentlyPlayedWord(game: Game, gameStep: GameStep) {
     axisIndex,
     middleIndex
   );
-}
-
-async function walkGeneratorWhileYielding<T>(
-  generator: Generator<T>
-): Promise<T[]> {
-  let rv = [];
-  while (true) {
-    let next = generator.next();
-    if (next.done) break;
-    rv.push(next.value);
-    await new Promise((resolve) => setTimeout(resolve));
-  }
-  return rv;
-}
-
-export async function getAllPlaysRecursively(
-  currentPlay: Play
-): Promise<NestedPlay> {
-  let rv: NestedPlay = {
-    thisPlay: currentPlay,
-    children: {},
-    resolvableChildren: {},
-  };
-
-  let playsAcross = currentPlay.findPlaysAcross();
-  for (const play of playsAcross) {
-    for (const child of await walkGeneratorWhileYielding(
-      play.getExpansionOptions()
-    )) {
-      let word = child.word;
-      while (
-        rv.children[word] !== undefined ||
-        rv.resolvableChildren[word] !== undefined
-      ) {
-        word = word + ".";
-      }
-
-      rv.resolvableChildren[word] = () => {
-        return getAllPlaysRecursively(child);
-      };
-    }
-  }
-  return rv;
-}
-
-export async function findAllPlays(game: Game, gameStep: GameStep) {
-  let playerWord = findCurrentlyPlayedWord(game, gameStep);
-  let startingPlays = [playerWord];
-  for (const option of await walkGeneratorWhileYielding(
-    playerWord.getExpansionOptions()
-  )) {
-    startingPlays.push(option);
-    await new Promise((resolve) => setTimeout(resolve));
-  }
-
-  let rv: NestedPlay = {
-    thisPlay: playerWord,
-    children: {},
-    resolvableChildren: {},
-  };
-
-  for (const play of startingPlays) {
-    let word = play.word;
-    while (
-      rv.children[word] !== undefined ||
-      rv.resolvableChildren[word] !== undefined
-    ) {
-      word = word + ".";
-    }
-    rv.resolvableChildren[word] = () => {
-      return getAllPlaysRecursively(play);
-    };
-  }
-
-  return rv;
-}
-
-export function scoreOfPlays(plays: Play[]) {
-  let rv = 0;
-  for (const play of plays) {
-    rv += play.score;
-  }
-  return rv;
-}
-
-const MAX_PLAY_TRIES = 2;
-
-export async function findBingos(
-  possiblePlays: NestedPlay,
-  callback: (bingo: Play[]) => void = () => {},
-  cantPlay: { [rack: string]: number } = {},
-  depthRemaining = 3
-): Promise<Play[]> {
-  let playerRack = [...possiblePlays.thisPlay.playerRackAfter].sort().join("");
-  if (cantPlay[playerRack] >= MAX_PLAY_TRIES) return [];
-  if (depthRemaining === 0) return [];
-
-  let candidates: Array<Array<Play>> = [];
-  let keyLengthSort = (a: string, b: string) => {
-    let wordA = a.replaceAll(".", "");
-    let wordB = b.replaceAll(".", "");
-    let wordAScore = 0;
-    let wordBScore = 0;
-    for (let i = 0; i < wordA.length; i++) {
-      wordAScore += tileValues(wordA[i] as Letter);
-    }
-    for (let i = 0; i < wordB.length; i++) {
-      wordBScore += tileValues(wordB[i] as Letter);
-    }
-    return wordAScore - wordBScore;
-  };
-  let keyResolver = async (original: string[], keys: string[]) => {
-    for (const key of keys) {
-      possiblePlays.children[key] = await possiblePlays.resolvableChildren[
-        key
-      ]();
-      original.push(key);
-      // remove resolvable child
-      delete possiblePlays.resolvableChildren[key];
-    }
-  };
-  let checkChildOrRecurse = async (key: string) => {
-    let child = possiblePlays.children[key];
-    // see if the rack is empty. if so, this is a bingo
-    if (child.thisPlay.playerRackAfter.length === 0) {
-      callback([child.thisPlay]);
-      return [child.thisPlay];
-    }
-    // otherwise, recurse
-    let bingo = await findBingos(
-      child,
-      (bingo) => {
-        callback([child.thisPlay, ...bingo]);
-      },
-      cantPlay,
-      depthRemaining - 1
-    );
-    if (bingo.length > 0) {
-      callback([child.thisPlay, ...bingo]);
-      return [child.thisPlay, ...bingo];
-    }
-    return [];
-  };
-  let checkForGoodBingo = async (key: string) => {
-    let bingo = await checkChildOrRecurse(key);
-
-    // if playing one word results in bingo, we're done
-    if (bingo.length === 1) {
-      return { bingo: bingo, good: true };
-    }
-
-    // otherwise, try to improve the order of the bingo
-    if (bingo.length > 0) {
-      // sort the plays by their word length
-      let sorted = [...bingo].sort((a, b) => a.word.length - b.word.length);
-
-      // see if we can play shorter words right now instead of later
-      // playing them early will yield more points
-      for (const play of sorted) {
-        let key = sortedChildren.find(
-          (k) => k.replaceAll(".", "") === play.word
-        );
-        if (key) {
-          // see if this key is a bingo
-          let newBingo = await checkChildOrRecurse(key);
-          if (scoreOfPlays(newBingo) > scoreOfPlays(bingo)) {
-            // we improved our bingo
-            return { bingo: newBingo, good: true };
-          }
-        }
-      }
-      // if not, this is probably best we can do
-      return { bingo: bingo, good: false };
-    }
-    return { bingo: [], good: false };
-  };
-
-  // find the longest keys
-  let sortedChildren = [
-    ...Object.keys(possiblePlays.children).sort(keyLengthSort).reverse(),
-  ];
-  let sortedResolvableChildren = Array.from(
-    Object.keys(possiblePlays.resolvableChildren).sort(keyLengthSort).reverse()
-  );
-
-  while (sortedChildren.length > 0 || sortedResolvableChildren.length > 0) {
-    // compare, which has longer words first
-    let firstChild = sortedChildren[0] || "";
-    let firstResolvableChild = sortedResolvableChildren[0] || "";
-    if (firstChild.length > firstResolvableChild.length) {
-      // we have a child that is longer than a resolvable child
-      let result = await checkForGoodBingo(firstChild);
-      if (result.good) {
-        return result.bingo;
-      } else if (result.bingo.length > 0) {
-        candidates.push(result.bingo);
-      }
-      // we didn't find a good bingo, so remove the key
-      sortedChildren.shift();
-    } else {
-      // we have a resolvable child that is longer than a child
-      await keyResolver([], [firstResolvableChild]);
-      let result = await checkForGoodBingo(firstResolvableChild);
-      if (result.good) {
-        return result.bingo;
-      } else if (result.bingo.length > 0) {
-        candidates.push(result.bingo);
-      }
-      sortedResolvableChildren.shift();
-    }
-  }
-
-  // we didn't find any good bingos
-  // return the shortest sequence that leads to a bingo
-  let sorted = [...candidates].sort((a, b) => a.length - b.length);
-  if (sorted.length > 0) {
-    return sorted[0];
-  }
-
-  // increase the count of the rack we couldn't play
-  if (cantPlay[playerRack] === undefined) {
-    cantPlay[playerRack] = 1;
-  } else {
-    cantPlay[playerRack]++;
-  }
-  return [];
 }
