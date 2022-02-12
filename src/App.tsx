@@ -104,6 +104,7 @@ function App() {
                       };
                       const bingoGenerator = currentPlay.findRackClears(
                         wordCounter,
+                        () => {},
                         maxWords
                       );
                       while (true) {
