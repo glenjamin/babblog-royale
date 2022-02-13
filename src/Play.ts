@@ -472,7 +472,7 @@ export class Play {
   }
 
   checkIfCanKill() {
-    const x = this.isHorizontal ?  this.startIndex : this.axisIndex;
+    const x = this.isHorizontal ? this.startIndex : this.axisIndex;
     const y = this.isHorizontal ? this.axisIndex : this.startIndex;
     return canReachPlayer(
       x,
@@ -545,9 +545,13 @@ export class Play {
   }
 }
 
-export function findCurrentlyPlayedWord(game: Game, currentStep: number) {
+export function findCurrentlyPlayedWord(
+  game: Game,
+  currentStep: number,
+  ownerToFind: PlayerIndex = 0
+): Play {
   let gameStep = game.timeline[currentStep];
-  let firstOwner = gameStep.owners.indexOf(0);
+  let firstOwner = gameStep.owners.indexOf(ownerToFind);
   let isHorizontal = gameStep.owners[firstOwner + 1] === 0;
   let axisIndex = Math.floor(firstOwner / game.board.size); // y coordinate
   let middleIndex = firstOwner % game.board.size; // x coordinate
@@ -565,6 +569,8 @@ export function findCurrentlyPlayedWord(game: Game, currentStep: number) {
     gameStep.player.letters,
     isHorizontal,
     axisIndex,
-    middleIndex
+    middleIndex,
+    false,
+    true
   );
 }
