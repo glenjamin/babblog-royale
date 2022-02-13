@@ -136,9 +136,8 @@ export function canReachPlayer(
       const newDirections = directionsRemaining.filter(
         (d) => d !== oppositeDirection
       );
-      const removeFromDistance = boardLetters[y * boardSize + x] === undefined
-        ? 1
-        : 0;
+      const removeFromDistance =
+        boardLetters[y * boardSize + x] === undefined ? 1 : 0;
       if (
         canReachPlayer(
           newX,
