@@ -9,7 +9,7 @@ interface GameGridProps {
   selectPlayer: (player: number | null) => void;
 }
 
-const CELL_SIZE = 25;
+const CELL_SIZE = 20;
 
 export default function GameGrid({
   game,
@@ -117,7 +117,9 @@ function drawGame(
 
       ctx.fillStyle = background;
       ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+
       if (bombed) {
+        // TODO: draw this at the end so that the bombing can overlap
         ctx.strokeStyle = "red";
         ctx.lineJoin = "round";
         ctx.lineWidth = 3;
@@ -126,15 +128,15 @@ function drawGame(
 
       if (letter) {
         const upper = letter.toUpperCase();
-        ctx.font = "16px Verdana, Geneva, Tahoma, sans-serif";
+        ctx.font = "12px Verdana, Geneva, Tahoma, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#eee";
-        ctx.fillText(upper, x + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2);
+        ctx.fillText(upper, x + CELL_SIZE / 2, y + CELL_SIZE / 2 + 1);
       } else if (bonus) {
         const type = bonusTypeMap[bonus];
         if (type === "bonusItem") {
-          ctx.font = "16px Arial";
+          ctx.font = "12px Arial";
           ctx.textAlign = "left";
           ctx.textBaseline = "bottom";
           ctx.fillStyle = "#000";
@@ -151,7 +153,7 @@ function drawGame(
                 2
           );
         } else {
-          ctx.font = "10px Verdana, Geneva, Tahoma, sans-serif";
+          ctx.font = "8px Verdana, Geneva, Tahoma, sans-serif";
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillStyle = type === "bonusLetter" ? "#393" : "#77d";
@@ -159,8 +161,8 @@ function drawGame(
           const line1 = bonus.substring(0, 2);
           const line2 = type === "bonusLetter" ? "Lt" : "Wd";
 
-          ctx.fillText(line1, x + CELL_SIZE / 2, y + 4);
-          ctx.fillText(line2, x + CELL_SIZE / 2, y + 14);
+          ctx.fillText(line1, x + CELL_SIZE / 2, y + 3);
+          ctx.fillText(line2, x + CELL_SIZE / 2, y + 10);
         }
       }
 

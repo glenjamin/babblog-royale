@@ -1,0 +1,6 @@
+html {
+  font-size: 12px;
+}
+body {
+  --bs-body-font-size: 12px;
+}
