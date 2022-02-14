@@ -1,12 +1,19 @@
-import { Bonus, Letter, Game, PlayerDetails, HotZone } from "./types";
+import {
+  Bonus,
+  Letter,
+  Game,
+  PlayerDetails,
+  HotZone,
+  PlayerIndex,
+} from "./types";
 import styles from "./Game.module.css";
 import { useEffect, useRef } from "react";
 
 interface GameGridProps {
   game: Game;
   currentStep: number;
-  selectedPlayer: number | null;
-  selectPlayer: (player: number | null) => void;
+  selectedPlayer: PlayerIndex | null;
+  selectPlayer: (player: PlayerIndex | null) => void;
 }
 
 const CELL_SIZE = 20;
@@ -37,8 +44,8 @@ export default function GameGrid({
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
 
-    drawGame(ctx, game, currentStep);
-  }, [game, currentStep]);
+    drawGame(ctx, game, currentStep, selectedPlayer);
+  }, [game, currentStep, selectedPlayer]);
 
   return <canvas className={styles.board} ref={canvasRef} />;
 }
@@ -80,7 +87,8 @@ function hotZonePattern(type: HotZone): HTMLCanvasElement {
 function drawGame(
   ctx: CanvasRenderingContext2D,
   game: Game,
-  currentStep: number
+  currentStep: number,
+  selectedPlayer: PlayerIndex | null
 ) {
   const size = game.board.size;
   const gridSize = (CELL_SIZE + 2) * game.board.size;
@@ -91,6 +99,8 @@ function drawGame(
 
   const hotZone = ctx.createPattern(hotZonePattern("hot"), "repeat")!;
   const warmZone = ctx.createPattern(hotZonePattern("warm"), "repeat")!;
+
+  const highlight = [] as { x: number; y: number; letter: Letter }[];
 
   for (let row = 0; row < size; row++) {
     for (let col = 0; col < size; col++) {
@@ -103,20 +113,6 @@ function drawGame(
       const hot = step.hot[index];
       const bombed = step.bombed[index];
       const bonus = game.board.base[index];
-      // TODO: highlight selected
-
-      let background: string = "";
-
-      if (owner !== undefined) {
-        background = ownerColours[owner];
-      } else if (letter) {
-        background = "#777";
-      } else {
-        background = "#eee";
-      }
-
-      ctx.fillStyle = background;
-      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
 
       if (bombed) {
         // TODO: draw this at the end so that the bombing can overlap
@@ -127,42 +123,44 @@ function drawGame(
       }
 
       if (letter) {
-        const upper = letter.toUpperCase();
-        ctx.font = "12px Verdana, Geneva, Tahoma, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#eee";
-        ctx.fillText(upper, x + CELL_SIZE / 2, y + CELL_SIZE / 2 + 1);
-      } else if (bonus) {
-        const type = bonusTypeMap[bonus];
-        if (type === "bonusItem") {
-          ctx.font = "12px Arial";
-          ctx.textAlign = "left";
-          ctx.textBaseline = "bottom";
-          ctx.fillStyle = "#000";
-          // TODO: use icons instead of emoji
-          const char = String(bonusContentMap[bonus]);
-          const measure = ctx.measureText(char);
-          ctx.fillText(
-            char,
-            x + CELL_SIZE / 2 - measure.width / 2 + 1,
-            y +
-              CELL_SIZE / 2 +
-              (measure.actualBoundingBoxAscent +
-                measure.actualBoundingBoxDescent) /
-                2
-          );
+        if (owner === selectedPlayer) {
+          highlight.push({ x, y, letter });
         } else {
-          ctx.font = "8px Verdana, Geneva, Tahoma, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "top";
-          ctx.fillStyle = type === "bonusLetter" ? "#393" : "#77d";
+          drawLetter(ctx, x, y, letter, owner);
+        }
+      } else {
+        drawCell(ctx, x, y, "#eee");
+        if (bonus) {
+          const type = bonusTypeMap[bonus];
+          if (type === "bonusItem") {
+            ctx.font = "12px Arial";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "bottom";
+            ctx.fillStyle = "#000";
+            // TODO: use icons instead of emoji
+            const char = String(bonusContentMap[bonus]);
+            const measure = ctx.measureText(char);
+            ctx.fillText(
+              char,
+              x + CELL_SIZE / 2 - measure.width / 2 + 1,
+              y +
+                CELL_SIZE / 2 +
+                (measure.actualBoundingBoxAscent +
+                  measure.actualBoundingBoxDescent) /
+                  2
+            );
+          } else {
+            ctx.font = "8px Verdana, Geneva, Tahoma, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillStyle = type === "bonusLetter" ? "#393" : "#77d";
 
-          const line1 = bonus.substring(0, 2);
-          const line2 = type === "bonusLetter" ? "Lt" : "Wd";
+            const line1 = bonus.substring(0, 2);
+            const line2 = type === "bonusLetter" ? "Lt" : "Wd";
 
-          ctx.fillText(line1, x + CELL_SIZE / 2, y + 3);
-          ctx.fillText(line2, x + CELL_SIZE / 2, y + 10);
+            ctx.fillText(line1, x + CELL_SIZE / 2, y + 3);
+            ctx.fillText(line2, x + CELL_SIZE / 2, y + 10);
+          }
         }
       }
 
@@ -172,6 +170,46 @@ function drawGame(
       }
     }
   }
+
+  if (selectedPlayer !== null) {
+    for (const { x, y, letter } of highlight) {
+      drawLetter(ctx, x, y, letter, selectedPlayer, true);
+    }
+  }
+}
+
+function drawLetter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  letter: string,
+  owner: PlayerIndex | undefined,
+  highlight?: true
+) {
+  const color = owner !== undefined ? ownerColours[owner] : "#777";
+  if (highlight) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = CELL_SIZE;
+  }
+  drawCell(ctx, x, y, color);
+  ctx.shadowBlur = 0;
+
+  const upper = letter.toUpperCase();
+  ctx.font = "12px Verdana, Geneva, Tahoma, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#eee";
+  ctx.fillText(upper, x + CELL_SIZE / 2, y + CELL_SIZE / 2 + 1);
+}
+
+function drawCell(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  background: string
+) {
+  ctx.fillStyle = background;
+  ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
 }
 
 export function TableGameGrid({
@@ -256,7 +294,7 @@ interface LetterProps {
   owner?: PlayerDetails;
   isSelected?: boolean;
   isBombed?: boolean;
-  selectPlayer?: (player: number | null) => void;
+  selectPlayer?: (player: PlayerIndex | null) => void;
 }
 export function LetterCell({
   letter,

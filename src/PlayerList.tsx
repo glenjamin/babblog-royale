@@ -2,13 +2,13 @@ import Badge from "react-bootstrap/Badge";
 import ListGroup from "react-bootstrap/ListGroup";
 import { DEAD_SCORE } from "./constants";
 import { LetterCell } from "./GameGrid";
-import { Game, PlayerDetails, PlayerMetrics } from "./types";
+import { Game, PlayerDetails, PlayerIndex, PlayerMetrics } from "./types";
 import levelFromScore from "./utils/level-from-score";
 
 interface PlayerListProps {
   players: PlayerDetails[];
-  selectedPlayer: number | null;
-  selectPlayer: (player: number | null) => void;
+  selectedPlayer: PlayerIndex | null;
+  selectPlayer: (player: PlayerIndex | null) => void;
   currentStep: number;
   timeline: Game["timeline"];
 }
@@ -49,7 +49,7 @@ interface PlayerListItemProps {
   isDead: boolean;
   isSelected: boolean;
   metrics: PlayerMetrics;
-  selectPlayer: (player: number | null) => void;
+  selectPlayer: (player: PlayerIndex | null) => void;
 }
 function PlayerListItem({
   player,
