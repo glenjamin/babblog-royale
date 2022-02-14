@@ -53,11 +53,11 @@ function hotZonePattern(type: HotZone): HTMLCanvasElement {
     c.height = size;
     const ctx = c.getContext("2d")!;
 
-    var x0 = size * 1.5;
-    var x1 = size * -0.5;
-    var y0 = size * -0.5;
-    var y1 = size * 1.5;
-    var offset = 12;
+    const x0 = size * 1.5;
+    const x1 = size * -0.5;
+    const y0 = size * -0.5;
+    const y1 = size * 1.5;
+    const offset = 12;
 
     ctx.globalAlpha = 0.2;
     ctx.strokeStyle = type === "hot" ? "#c00" : "#999";
@@ -101,10 +101,8 @@ function drawGame(
       const letter = step.letters[index];
       const owner = step.owners[index];
       const hot = step.hot[index];
-      // TODO: bombs
-      // const bombed = step.bombed[index];
-      // TODO: bonus
-      // const bonus = game.board.base[index];
+      const bombed = step.bombed[index];
+      const bonus = game.board.base[index];
       // TODO: highlight selected
 
       let background: string = "";
@@ -119,6 +117,12 @@ function drawGame(
 
       ctx.fillStyle = background;
       ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      if (bombed) {
+        ctx.strokeStyle = "red";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+      }
 
       if (letter) {
         const upper = letter.toUpperCase();
@@ -127,6 +131,37 @@ function drawGame(
         ctx.textBaseline = "middle";
         ctx.fillStyle = "#eee";
         ctx.fillText(upper, x + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2);
+      } else if (bonus) {
+        const type = bonusTypeMap[bonus];
+        if (type === "bonusItem") {
+          ctx.font = "16px Arial";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "bottom";
+          ctx.fillStyle = "#000";
+          // TODO: use icons instead of emoji
+          const char = String(bonusContentMap[bonus]);
+          const measure = ctx.measureText(char);
+          ctx.fillText(
+            char,
+            x + CELL_SIZE / 2 - measure.width / 2 + 1,
+            y +
+              CELL_SIZE / 2 +
+              (measure.actualBoundingBoxAscent +
+                measure.actualBoundingBoxDescent) /
+                2
+          );
+        } else {
+          ctx.font = "10px Verdana, Geneva, Tahoma, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = type === "bonusLetter" ? "#393" : "#77d";
+
+          const line1 = bonus.substring(0, 2);
+          const line2 = type === "bonusLetter" ? "Lt" : "Wd";
+
+          ctx.fillText(line1, x + CELL_SIZE / 2, y + 4);
+          ctx.fillText(line2, x + CELL_SIZE / 2, y + 14);
+        }
       }
 
       if (hot) {
