@@ -7,7 +7,7 @@ import {
   PlayerIndex,
 } from "./types";
 import styles from "./Game.module.css";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface GameGridProps {
   game: Game;
@@ -47,7 +47,52 @@ export default function GameGrid({
     drawGame(ctx, game, currentStep, selectedPlayer);
   }, [game, currentStep, selectedPlayer]);
 
-  return <canvas className={styles.board} ref={canvasRef} />;
+  const [title, setTitle] = useState<string>();
+  const onHover = useCallback(
+    (x: number, y: number) => {
+      const owner = ownerAtPosition(game, currentStep, x, y);
+      // TODO: also set cursor to pointer?
+      if (owner) {
+        setTitle(game.players[owner].name);
+      } else {
+        setTitle(undefined);
+      }
+    },
+    [game, currentStep]
+  );
+
+  const onClick = useCallback(
+    (x: number, y: number) => {
+      const owner = ownerAtPosition(game, currentStep, x, y);
+      if (owner) {
+        selectPlayer(owner);
+      }
+    },
+    [game, currentStep, selectPlayer]
+  );
+
+  return (
+    <canvas
+      className={styles.board}
+      ref={canvasRef}
+      title={title}
+      onMouseMove={(e) => onHover(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+      onClick={(e) => onClick(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+    />
+  );
+}
+
+function ownerAtPosition(
+  game: Game,
+  currentStep: number,
+  x: number,
+  y: number
+): PlayerIndex | null {
+  const col = Math.floor(x / (CELL_SIZE + 2));
+  const row = Math.floor(y / (CELL_SIZE + 2));
+  const index = row * game.board.size + col;
+  const step = game.timeline[currentStep];
+  return step.owners[index] ?? null;
 }
 
 let hotZonePatternCache = {} as Record<HotZone, HTMLCanvasElement | undefined>;
@@ -186,7 +231,7 @@ function drawLetter(
   owner: PlayerIndex | undefined,
   highlight?: true
 ) {
-  const color = owner !== undefined ? ownerColours[owner] : "#777";
+  const color = ownerColours[owner ?? -1];
   if (highlight) {
     ctx.shadowColor = color;
     ctx.shadowBlur = CELL_SIZE;
@@ -272,6 +317,7 @@ export function EmptyCell() {
   return <div className={styles.empty} />;
 }
 const ownerColours = {
+  [-1]: "#777",
   0: "#68D",
   1: "#c4e",
   2: "#862",
