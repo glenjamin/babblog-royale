@@ -13,3 +13,5 @@ export function tileValues(tile: Letter): number {
   if (["q", "z"].includes(tile)) return 10;
   return 0;
 }
+
+export const approxTabContentMaxHeight = 650;
