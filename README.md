@@ -36,7 +36,23 @@ The underlying log parser currently handles:
 
 If you have more ideas or suggestions, please open an issue on GitHub.
 
-## Commandline usage
+## Runnning in development
+
+The first time you clone the project, or any time `package-lock.json` changes, you'll need to install the project dependencies, this may take a few minutes the first time.
+
+```sh
+npm install
+```
+
+Now you can start the local dev server, which will automatically reload when you make changes.
+
+```sh
+npm start
+```
+
+The application will be available on http://localhost:3000
+
+### Commandline usage
 
 With Node.js installed, run `main.js` with a file.
 

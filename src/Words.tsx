@@ -4,7 +4,7 @@ import Button from "react-bootstrap/Button";
 
 // This feels like a hack, but the CSS to make it relative seemed even more
 // complicated.
-const approxGridHeight = 780;
+const approxGridHeight = 580;
 
 interface WordsProps {
   timeline: Array<{

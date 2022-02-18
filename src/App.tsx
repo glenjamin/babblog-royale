@@ -53,22 +53,24 @@ function App() {
           </Col>
           {/* Sidebar */}
           <Col className="border-start ps-0">
-            <Tabs defaultActiveKey="steps" className="mt-3 ps-2">
-              <Tab eventKey="steps" title="Steps">
+            <Stack className="pt-2">
+              <GameStepper
+                currentStep={currentStep}
+                max={game.timeline.length - 1}
+                stepMeBack={actions.stepMeBack}
+                stepBack={actions.stepBack}
+                stepForwards={actions.stepForwards}
+                stepTo={actions.chooseStep}
+                stepMeForwards={actions.stepMeForwards}
+              />
+              <PlayerState
+                levels={game.levels}
+                {...game.timeline[currentStep].player}
+              />
+            </Stack>
+            <Tabs defaultActiveKey="players" className="mt-3 ps-2">
+              <Tab eventKey="players" title="Players">
                 <Stack className="p-2">
-                  <GameStepper
-                    currentStep={currentStep}
-                    max={game.timeline.length - 1}
-                    stepMeBack={actions.stepMeBack}
-                    stepBack={actions.stepBack}
-                    stepForwards={actions.stepForwards}
-                    stepTo={actions.chooseStep}
-                    stepMeForwards={actions.stepMeForwards}
-                  />
-                  <PlayerState
-                    levels={game.levels}
-                    {...game.timeline[currentStep].player}
-                  />
                   <PlayerList
                     players={game.players}
                     selectedPlayer={selectedPlayer}
