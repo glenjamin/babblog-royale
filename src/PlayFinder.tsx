@@ -21,12 +21,14 @@ type FindType = "Kills" | "RackClears";
 
 function PlayFinder({ game, currentStep }: PlayFinderProps) {
   const MAX_TRIES = 2000;
-  const [{ stopFunction, tryCount, cache, plays }, setState] = useState<{
-    stopFunction?: () => void;
-    tryCount?: number;
-    cache?: CachedPlay;
-    plays?: Array<Play[]>;
-  }>({});
+  const [{ stopFunction, tryCount, cache, plays, noResults }, setState] =
+    useState<{
+      stopFunction?: () => void;
+      tryCount?: number;
+      cache?: CachedPlay;
+      plays?: Array<Play[]>;
+      noResults?: boolean;
+    }>({});
   const findTaskRunning = stopFunction !== undefined;
 
   if (findTaskRunning) {
@@ -108,6 +110,7 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
         play: currentPlay,
       },
       plays: plays,
+      noResults: plays.length === 0,
     });
   }
 
@@ -153,6 +156,7 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
               .map((p, j) => p.word.toUpperCase())
               .join(" -> ")} (${playsScore(play)} points)`}</li>
           ))}
+          {noResults && <li>No results</li>}
         </ul>
       </Stack>
     </>
