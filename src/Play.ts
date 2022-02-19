@@ -333,13 +333,20 @@ export class Play {
     }
   }
 
-  isSameWordSamePosition(other:Play){
-    return this.word === other.word && this.startIndex === other.startIndex && this.isHorizontal === other.isHorizontal;
+  isSameWordSamePosition(other: Play) {
+    return (
+      this.word === other.word &&
+      this.startIndex === other.startIndex &&
+      this.isHorizontal === other.isHorizontal
+    );
   }
 
   findPlaysAcross() {
     if (!this.isValid) return []; // doubt this function is ever called if the play is invalid
     let rv = [];
+    if (this.isCurrentPlay) {
+      rv.push(this);
+    }
     for (let i = this.startIndex; i < this.endIndex; i++) {
       rv.push(
         new Play(
@@ -426,7 +433,9 @@ export class Play {
         if (child.done) break;
 
         // check if child is already known
-        if (this.knownChildren.some(c => c.isSameWordSamePosition(child.value))) {
+        if (
+          this.knownChildren.some((c) => c.isSameWordSamePosition(child.value))
+        ) {
           continue;
         }
 

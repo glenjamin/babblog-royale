@@ -3,7 +3,7 @@ import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Stack from "react-bootstrap/Stack";
 import ProgressBar from "react-bootstrap/ProgressBar";
-import { findCurrentlyPlayedWord, Play } from "./Play";
+import { findCurrentlyPlayedWord, Play, playsScore } from "./Play";
 import { approxTabContentMaxHeight } from "./constants";
 
 interface PlayFinderProps {
@@ -38,24 +38,20 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
   }
 
   async function start(type: FindType) {
-    console.log(`PlayFinder start ${type}`);
     let running = true;
     const stop = () => {
       running = false;
-      console.log("stopping");
     };
     let plays: Array<Play[]> = [];
 
     setState({ stopFunction: stop, tryCount: 0, cache: undefined, plays });
 
     const currentPlay =
-      cache !== undefined && cache.gameUUID === game.posInFile && cache.step === currentStep
+      cache !== undefined &&
+      cache.gameUUID === game.posInFile &&
+      cache.step === currentStep
         ? cache.play
         : await findCurrentlyPlayedWord(game, currentStep);
-
-
-
-    console.log(`PlayFinder start ${type} currentPlay:}`, currentPlay);
 
     setState({
       stopFunction: stop,
@@ -68,10 +64,8 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
     });
 
     const tries = [0];
-    const updateState = (newPlays=false) => {
-      if (!running) return;
-      if (!newPlays && tries[0] % 50 !== 0) return;
-
+    const updateState = (newPlays = false) => {
+      if (!newPlays && (!running || tries[0] % 20 !== 0)) return;
 
       setState({
         stopFunction: stop,
@@ -101,7 +95,7 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
         break;
       }
       plays.push(result.value);
-      console.log(result.value);
+      plays.sort((a, b) => playsScore(b) - playsScore(a));
       updateState(true);
     }
 
@@ -142,14 +136,24 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
             Stop
           </Button>
         </Stack>
-        {!findTaskRunning && <ProgressBar now={100} />}
+        {!findTaskRunning && (
+          <ProgressBar now={100} style={{ minHeight: "1rem" }} />
+        )}
         {findTaskRunning && (
           <ProgressBar
             animated
             label={"Searching..."}
             now={((tryCount ?? 0) / MAX_TRIES) * 100}
+            style={{ minHeight: "1rem" }}
           />
         )}
+        <ul className="list-unstyled" style={{ overflowY: "auto" }}>
+          {plays?.map((play, i) => (
+            <li key={i}>{`${play
+              .map((p, j) => p.word.toUpperCase())
+              .join(" -> ")} (${playsScore(play)} points)`}</li>
+          ))}
+        </ul>
       </Stack>
     </>
   );
