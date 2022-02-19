@@ -143,17 +143,12 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
             Stop
           </Button>
         </Stack>
-        {!findTaskRunning && (
-          <ProgressBar now={100} style={{ minHeight: "1rem" }} />
-        )}
-        {findTaskRunning && (
-          <ProgressBar
-            animated
-            label={"Searching..."}
-            now={((tryCount ?? 0) / MAX_TRIES) * 100}
-            style={{ minHeight: "1rem" }}
-          />
-        )}
+        <ProgressBar
+          animated={findTaskRunning}
+          label={findTaskRunning && "Searching..."}
+          now={findTaskRunning ? ((tryCount ?? 0) / MAX_TRIES) * 100 : 100}
+          style={{ minHeight: "1rem" }}
+        />
         <ul className="list-unstyled" style={{ overflowY: "auto" }}>
           {plays?.map((play, i) => (
             <li key={i}>{`${play
