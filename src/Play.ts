@@ -9,8 +9,17 @@ import {
 } from "./utils/gameBoardHelper";
 import { tileValues } from "./constants";
 
+let lastAwaitTime = 0;
+
 async function waitEventLoop() {
-  return new Promise((resolve) => setTimeout(resolve));
+  let rv = null;
+
+  if (Date.now() - lastAwaitTime > 5) {
+    rv = new Promise((resolve) => setTimeout(resolve));
+  }
+
+  lastAwaitTime = Date.now();
+  return rv;
 }
 
 type Intention = {
@@ -52,6 +61,7 @@ export class Play {
   readonly boardLettersAfter: SparseArray<Letter>;
   readonly playerKillsAfter: number;
   readonly knownChildren: Play[] = [];
+  allChildrenKnown: boolean = false;
   private readonly isCurrentPlay: boolean;
   private readonly reversePlay?: Play;
 
@@ -420,9 +430,10 @@ export class Play {
   async *findChildren() {
     // first yield already known children
     for (const child of this.knownChildren) {
-      await waitEventLoop();
       yield Promise.resolve(child);
     }
+
+    if (this.allChildrenKnown) return;
 
     // then find new children
     for (const across of this.findPlaysAcross()) {
@@ -443,6 +454,8 @@ export class Play {
         this.knownChildren.push(child.value);
       }
     }
+
+    this.allChildrenKnown = true;
   }
 
   async *findRackClears({
@@ -474,7 +487,6 @@ export class Play {
       if (resultedInClear) break; // found a clear at previous depth, no need to search deeper
       const childrenGenerator = this.findChildren();
       while (canContinue[0]) {
-        await waitEventLoop();
         const child = await childrenGenerator.next();
         if (child.done) break;
         const childBingoGenerator = child.value.findRackClears({
@@ -545,7 +557,6 @@ export class Play {
       if (resultedInKill) break; // found a kill at previous depth, no need to search deeper
       const childrenGenerator = this.findChildren();
       while (canContinue[0]) {
-        await waitEventLoop();
         const child = await childrenGenerator.next();
         if (child.done) break;
         const childKillGenerator = child.value.findKills({
