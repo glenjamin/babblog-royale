@@ -11,6 +11,7 @@ import * as zip from "@zip.js/zip.js";
 
 import { Game } from "./types";
 import { newParser } from "./parser";
+import { Waiter } from "./utils/utils";
 
 interface ImportProps {
   show: boolean;
@@ -34,6 +35,7 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
 
   async function parseFile(file: File) {
     setLoading(true);
+    const waiter = new Waiter();
 
     const parser = newParser();
     const parseBlob = async (blob: Blob) => {
@@ -68,10 +70,9 @@ function Importer({ show, onImport, onClose }: ImportProps): JSX.Element {
       return setError("No games found in this file. Try another file.");
     }
 
-    setTimeout(() => {
-      setLoading(false);
-      onImport(games);
-    }, 500);
+    await waiter.wait(500);
+    setLoading(false);
+    onImport(games);
   }
 
   return (

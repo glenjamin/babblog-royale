@@ -5,6 +5,7 @@ import Stack from "react-bootstrap/Stack";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import { findCurrentlyPlayedWord, Play, playsScore } from "./Play";
 import { approxTabContentMaxHeight } from "./constants";
+import { Waiter } from "./utils/utils";
 
 interface PlayFinderProps {
   game: Game;
@@ -44,6 +45,7 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
     const stop = () => {
       running[0] = false;
     };
+    const waiter = new Waiter();
     let plays: Array<Play[]> = [];
 
     setState({ stopFunction: stop, tryCount: 0, cache: undefined, plays });
@@ -100,6 +102,8 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
       plays.sort((a, b) => playsScore(b) - playsScore(a));
       updateState(true);
     }
+
+    await waiter.wait(500);
 
     setState({
       stopFunction: undefined,
