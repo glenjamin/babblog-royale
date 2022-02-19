@@ -126,4 +126,5 @@ export type Game = {
     oldMMR: number;
     position: number;
   };
+  posInFile: string;
 };

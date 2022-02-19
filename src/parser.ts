@@ -217,6 +217,7 @@ export function newParser() {
           oldMMR: 0,
           position: 0,
         },
+        posInFile: games.length.toString(),
       };
 
       squaresWithMults.forEach(({ index, wordScoreMult }) => {

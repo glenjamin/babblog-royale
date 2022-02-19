@@ -21,7 +21,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
     stepBack,
     stepTo,
     stepForwards,
-    stepMeForwards
+    stepMeForwards,
   } = props;
   return (
     <>

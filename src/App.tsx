@@ -81,6 +81,11 @@ function App() {
                   />
                 </Stack>
               </Tab>
+              <Tab eventKey="finder" title="Play Finder">
+                <Stack className="p-2">
+                  <PlayFinder game={game} currentStep={currentStep} />
+                </Stack>
+              </Tab>
               <Tab eventKey="words" title="Words">
                 <Stack className="p-2">
                   <Words

@@ -69,6 +69,7 @@ const placeholderGame: Game = {
     oldMMR: 0,
     position: 0,
   },
+  posInFile: "nan",
 };
 
 function placeLetter(
