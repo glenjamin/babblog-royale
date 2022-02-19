@@ -533,11 +533,8 @@ export class Play {
     if (depthRemaining === 0) return;
 
     if (!this.checkIfCanKill()) {
-      if (this.killedCount > 0) {
-        yield Promise.resolve([this]);
-      } else {
-        return;
-      }
+      if (this.killedCount > 0) yield Promise.resolve([this]);
+      return;
     }
 
     let resultedInKill = false; /* this might be unnecessary for kill finding ()
@@ -572,9 +569,7 @@ export class Play {
 
     if (!resultedInKill) {
       cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
-      if (this.killedCount > 0) {
-        yield Promise.resolve([this]);
-      }
+      if (this.killedCount > 0) yield Promise.resolve([this]);
     }
   }
 }
