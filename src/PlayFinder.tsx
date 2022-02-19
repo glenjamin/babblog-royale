@@ -38,9 +38,9 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
   }
 
   async function start(type: FindType) {
-    let running = true;
+    let running = [true];
     const stop = () => {
-      running = false;
+      running[0] = false;
     };
     let plays: Array<Play[]> = [];
 
@@ -80,7 +80,7 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
     };
     const props = {
       numberOfWordsSearched: tries,
-      canContinue: [running],
+      canContinue: running,
       callback: updateState,
       maxNumberOfWords: MAX_TRIES,
     };
@@ -89,7 +89,7 @@ function PlayFinder({ game, currentStep }: PlayFinderProps) {
         ? currentPlay.findKills(props)
         : currentPlay.findRackClears(props);
 
-    while (running) {
+    while (running[0]) {
       const result = await playGenerator.next();
       if (result.done) {
         break;

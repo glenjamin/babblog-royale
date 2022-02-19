@@ -526,6 +526,12 @@ export class Play {
     numberOfWordsSearched[0]++;
     callback();
 
+    if (!canContinue[0]) return;
+    if (numberOfWordsSearched[0] > maxNumberOfWords) return;
+    const playerRack = [...this.playerRackAfter].sort().join("");
+    if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
+    if (depthRemaining === 0) return;
+
     if (!this.checkIfCanKill()) {
       if (this.killedCount > 0) {
         yield Promise.resolve([this]);
@@ -534,11 +540,6 @@ export class Play {
       }
     }
 
-    if (!canContinue[0]) return;
-    if (numberOfWordsSearched[0] > maxNumberOfWords) return;
-    const playerRack = [...this.playerRackAfter].sort().join("");
-    if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
-    if (depthRemaining === 0) return;
     let resultedInKill = false; /* this might be unnecessary for kill finding ()
     might cause us to miss multi-kills *shrug*/
 
