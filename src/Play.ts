@@ -31,14 +31,20 @@ export function playsScore(plays: Play[]): number {
   return Math.floor(plays.reduce((score, play) => score + play.score, 0));
 }
 
-export interface playFinderProps {
-  numberOfWordsSearched?: number[];
-  canContinue?: boolean[];
+function playsToUniqueId(plays: Play[]): string {
+  return plays.map((play) => play.uniqueId()).join("-");
+}
+
+export interface FindPlaysProps {
+  numberOfWordsSearched: number[];
+  canContinue: boolean[];
   callback?: () => void;
+  isAnswer: (p: Play) => boolean;
+  isValid?: (p: Play) => boolean;
+  cantPlayRacks?: { [p: string]: number };
   maxNumberOfWords?: number;
   tryRacksUntil?: number;
   depthRemaining?: number;
-  cantPlayRacks?: { [p: string]: number };
 }
 
 export class Play {
@@ -314,8 +320,8 @@ export class Play {
     }
     // endregion
 
-    // region generate a reverse play
-    if (this.word.length === 1 && !this.isHorizontal) {
+    // region generate a reverse play (used at the very start of the game)
+    if (this.isCurrentPlay && this.word.length === 1 && !this.isHorizontal) {
       this.reversePlay = new Play(
         boardLetters,
         boardSize,
@@ -343,12 +349,14 @@ export class Play {
     }
   }
 
+  uniqueId(): string {
+    return `${this.isHorizontal ? "c" : "r"}${this.axisIndex}x${
+      this.startIndex
+    }${this.word}`;
+  }
+
   isSameWordSamePosition(other: Play) {
-    return (
-      this.word === other.word &&
-      this.startIndex === other.startIndex &&
-      this.isHorizontal === other.isHorizontal
-    );
+    return this.uniqueId() === other.uniqueId();
   }
 
   findPlaysAcross() {
@@ -458,61 +466,6 @@ export class Play {
     this.allChildrenKnown = true;
   }
 
-  async *findRackClears({
-    numberOfWordsSearched = [0],
-    canContinue = [true],
-    callback = () => {},
-    maxNumberOfWords = 2000,
-    tryRacksUntil = 3,
-    depthRemaining = 3,
-    cantPlayRacks = {},
-  }: playFinderProps): AsyncGenerator<Play[]> {
-    numberOfWordsSearched[0]++;
-    callback();
-
-    if (this.playerRackAfter.length === 0) {
-      yield Promise.resolve([this]);
-      return;
-    }
-
-    if (!canContinue[0]) return;
-    if (numberOfWordsSearched[0] > maxNumberOfWords) return;
-    const playerRack = [...this.playerRackAfter].sort().join("");
-    if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
-    if (depthRemaining === 0) return;
-    let resultedInClear = false;
-
-    // breadth first search
-    for (let i = 1; i <= depthRemaining; i++) {
-      if (resultedInClear) break; // found a clear at previous depth, no need to search deeper
-      const childrenGenerator = this.findChildren();
-      while (canContinue[0]) {
-        const child = await childrenGenerator.next();
-        if (child.done) break;
-        const childBingoGenerator = child.value.findRackClears({
-          numberOfWordsSearched,
-          canContinue,
-          callback,
-          maxNumberOfWords,
-          tryRacksUntil,
-          depthRemaining: i - 1,
-          cantPlayRacks,
-        });
-        while (canContinue[0]) {
-          await waitEventLoop();
-          const clear = await childBingoGenerator.next();
-          if (clear.done) break;
-          yield Promise.resolve([this, ...clear.value]);
-          resultedInClear = true;
-        }
-      }
-    }
-
-    if (!resultedInClear) {
-      cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
-    }
-  }
-
   checkIfCanKill() {
     const x = this.isHorizontal ? this.startIndex : this.axisIndex;
     const y = this.isHorizontal ? this.axisIndex : this.startIndex;
@@ -526,61 +479,65 @@ export class Play {
     );
   }
 
-  async *findKills({
-    numberOfWordsSearched = [0],
-    canContinue = [true],
-    callback = () => {},
-    maxNumberOfWords = 2000,
-    tryRacksUntil = 3,
-    depthRemaining = 3,
-    cantPlayRacks = {},
-  }: playFinderProps): AsyncGenerator<Play[]> {
-    numberOfWordsSearched[0]++;
-    callback();
+  async *findPlays(args: FindPlaysProps): AsyncGenerator<Play[]> {
+    args.numberOfWordsSearched[0]++;
+    args.callback?.();
 
-    if (!canContinue[0]) return;
-    if (numberOfWordsSearched[0] > maxNumberOfWords) return;
+    // apply default values
+    if (args.maxNumberOfWords === undefined) args.maxNumberOfWords = 2000;
+    if (args.tryRacksUntil === undefined) args.tryRacksUntil = 3;
+    if (args.depthRemaining === undefined) args.depthRemaining = 3;
+    if (args.cantPlayRacks === undefined) args.cantPlayRacks = {};
+    if (args.isValid === undefined) args.isValid = (_) => true;
+
+    // check if this is valid answer
+    if (args.isAnswer(this)) yield Promise.resolve([this]);
+
+    // check if we can continue
+    if (!args.canContinue[0]) return;
+    if (args.numberOfWordsSearched[0] > args.maxNumberOfWords) return;
     const playerRack = [...this.playerRackAfter].sort().join("");
-    if (cantPlayRacks[playerRack] >= tryRacksUntil) return;
-    if (depthRemaining === 0) return;
+    if (args.cantPlayRacks[playerRack] >= args.tryRacksUntil) return;
+    if (args.depthRemaining === 0) return;
+    if (!args.isValid(this)) return;
 
-    if (!this.checkIfCanKill()) {
-      if (this.killedCount > 0) yield Promise.resolve([this]);
-      return;
-    }
-
-    let resultedInKill = false; /* this might be unnecessary for kill finding ()
-    might cause us to miss multi-kills *shrug*/
+    let resultedInPlay = false;
 
     // breadth first search
-    for (let i = 1; i <= depthRemaining; i++) {
-      if (resultedInKill) break; // found a kill at previous depth, no need to search deeper
+    let alreadyYielded: string[] = [];
+    for (let i = 1; i <= args.depthRemaining; i++) {
       const childrenGenerator = this.findChildren();
-      while (canContinue[0]) {
+      while (args.canContinue[0]) {
         const child = await childrenGenerator.next();
         if (child.done) break;
-        const childKillGenerator = child.value.findKills({
-          numberOfWordsSearched,
-          canContinue,
-          callback,
-          maxNumberOfWords,
-          tryRacksUntil,
+        const childPlayGenerator = child.value.findPlays({
+          numberOfWordsSearched: args.numberOfWordsSearched,
+          canContinue: args.canContinue,
+          callback: args.callback,
+          isAnswer: args.isAnswer,
+          isValid: args.isValid,
+          cantPlayRacks: args.cantPlayRacks,
+          maxNumberOfWords: args.maxNumberOfWords,
+          tryRacksUntil: args.tryRacksUntil,
           depthRemaining: i - 1,
-          cantPlayRacks,
         });
-        while (canContinue[0]) {
+        while (args.canContinue[0]) {
           await waitEventLoop();
-          const kill = await childKillGenerator.next();
-          if (kill.done) break;
-          yield Promise.resolve([this, ...kill.value]);
-          resultedInKill = true;
+          const play = await childPlayGenerator.next();
+          if (play.done) break;
+
+          const rv = [this, ...play.value];
+          const uuid = playsToUniqueId(rv);
+          if (alreadyYielded.includes(uuid)) continue;
+          yield Promise.resolve(rv);
+          alreadyYielded.push(uuid);
+          resultedInPlay = true;
         }
       }
     }
 
-    if (!resultedInKill) {
-      cantPlayRacks[playerRack] = cantPlayRacks[playerRack]++ || 1;
-      if (this.killedCount > 0) yield Promise.resolve([this]);
+    if (!resultedInPlay) {
+      args.cantPlayRacks[playerRack] = args.cantPlayRacks[playerRack]++ || 1;
     }
   }
 }
