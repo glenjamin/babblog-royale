@@ -1,13 +1,263 @@
-import { Bonus, Letter, Game, PlayerDetails, HotZone } from "./types";
+import {
+  Bonus,
+  Letter,
+  Game,
+  PlayerDetails,
+  HotZone,
+  PlayerIndex,
+} from "./types";
 import styles from "./Game.module.css";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface GameGridProps {
   game: Game;
   currentStep: number;
-  selectedPlayer: number | null;
-  selectPlayer: (player: number | null) => void;
+  selectedPlayer: PlayerIndex | null;
+  selectPlayer: (player: PlayerIndex | null) => void;
 }
+
+const CELL_SIZE = 20;
+
 export default function GameGrid({
+  game,
+  currentStep,
+  selectedPlayer,
+  selectPlayer,
+}: GameGridProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const gridSize = (CELL_SIZE + 2) * game.board.size;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const ratio = window.devicePixelRatio;
+    canvas.style.width = gridSize + "px";
+    canvas.style.height = gridSize + "px";
+    canvas.width = gridSize * ratio;
+    canvas.height = gridSize * ratio;
+    ctx.scale(ratio, ratio);
+  }, [gridSize]);
+
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+
+    drawGame(ctx, game, currentStep, selectedPlayer);
+  }, [game, currentStep, selectedPlayer]);
+
+  const [title, setTitle] = useState<string>();
+  const onHover = useCallback(
+    (x: number, y: number) => {
+      const owner = ownerAtPosition(game, currentStep, x, y);
+      // TODO: also set cursor to pointer?
+      if (owner) {
+        setTitle(game.players[owner].name);
+      } else {
+        setTitle(undefined);
+      }
+    },
+    [game, currentStep]
+  );
+
+  const onClick = useCallback(
+    (x: number, y: number) => {
+      const owner = ownerAtPosition(game, currentStep, x, y);
+      if (owner) {
+        selectPlayer(owner);
+      }
+    },
+    [game, currentStep, selectPlayer]
+  );
+
+  return (
+    <canvas
+      className={styles.board}
+      ref={canvasRef}
+      title={title}
+      onMouseMove={(e) => onHover(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+      onClick={(e) => onClick(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+    />
+  );
+}
+
+function ownerAtPosition(
+  game: Game,
+  currentStep: number,
+  x: number,
+  y: number
+): PlayerIndex | null {
+  const col = Math.floor(x / (CELL_SIZE + 2));
+  const row = Math.floor(y / (CELL_SIZE + 2));
+  const index = row * game.board.size + col;
+  const step = game.timeline[currentStep];
+  return step.owners[index] ?? null;
+}
+
+let hotZonePatternCache = {} as Record<HotZone, HTMLCanvasElement | undefined>;
+function hotZonePattern(type: HotZone): HTMLCanvasElement {
+  if (!hotZonePatternCache[type]) {
+    const size = 12;
+
+    const c = document.createElement("canvas");
+    c.width = size;
+    c.height = size;
+    const ctx = c.getContext("2d")!;
+
+    const x0 = size * 1.5;
+    const x1 = size * -0.5;
+    const y0 = size * -0.5;
+    const y1 = size * 1.5;
+    const offset = 12;
+
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = type === "hot" ? "#c00" : "#999";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.moveTo(x0 - offset, y0);
+    ctx.lineTo(x1 - offset, y1);
+    ctx.moveTo(x0 + offset, y0);
+    ctx.lineTo(x1 + offset, y1);
+    ctx.stroke();
+
+    hotZonePatternCache[type] = c;
+  }
+  return hotZonePatternCache[type]!;
+}
+
+function drawGame(
+  ctx: CanvasRenderingContext2D,
+  game: Game,
+  currentStep: number,
+  selectedPlayer: PlayerIndex | null
+) {
+  const size = game.board.size;
+  const gridSize = (CELL_SIZE + 2) * game.board.size;
+
+  const step = game.timeline[currentStep];
+
+  ctx.clearRect(0, 0, gridSize, gridSize);
+
+  const hotZone = ctx.createPattern(hotZonePattern("hot"), "repeat")!;
+  const warmZone = ctx.createPattern(hotZonePattern("warm"), "repeat")!;
+
+  const highlight = [] as { x: number; y: number; letter: Letter }[];
+
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const x = col * (CELL_SIZE + 2);
+      const y = row * (CELL_SIZE + 2);
+
+      const index = row * size + col;
+      const letter = step.letters[index];
+      const owner = step.owners[index];
+      const hot = step.hot[index];
+      const bombed = step.bombed[index];
+      const bonus = game.board.base[index];
+
+      if (bombed) {
+        // TODO: draw this at the end so that the bombing can overlap
+        ctx.strokeStyle = "red";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+      }
+
+      if (letter) {
+        if (owner === selectedPlayer) {
+          highlight.push({ x, y, letter });
+        } else {
+          drawLetter(ctx, x, y, letter, owner);
+        }
+      } else {
+        drawCell(ctx, x, y, "#eee");
+        if (bonus) {
+          const type = bonusTypeMap[bonus];
+          if (type === "bonusItem") {
+            ctx.font = "12px Arial";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "bottom";
+            ctx.fillStyle = "#000";
+            // TODO: use icons instead of emoji
+            const char = String(bonusContentMap[bonus]);
+            const measure = ctx.measureText(char);
+            ctx.fillText(
+              char,
+              x + CELL_SIZE / 2 - measure.width / 2 + 1,
+              y +
+                CELL_SIZE / 2 +
+                (measure.actualBoundingBoxAscent +
+                  measure.actualBoundingBoxDescent) /
+                  2
+            );
+          } else {
+            ctx.font = "8px Verdana, Geneva, Tahoma, sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "top";
+            ctx.fillStyle = type === "bonusLetter" ? "#393" : "#77d";
+
+            const line1 = bonus.substring(0, 2);
+            const line2 = type === "bonusLetter" ? "Lt" : "Wd";
+
+            ctx.fillText(line1, x + CELL_SIZE / 2, y + 3);
+            ctx.fillText(line2, x + CELL_SIZE / 2, y + 10);
+          }
+        }
+      }
+
+      if (hot) {
+        ctx.fillStyle = hot === "hot" ? hotZone : warmZone;
+        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      }
+    }
+  }
+
+  if (selectedPlayer !== null) {
+    for (const { x, y, letter } of highlight) {
+      drawLetter(ctx, x, y, letter, selectedPlayer, true);
+    }
+  }
+}
+
+function drawLetter(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  letter: string,
+  owner: PlayerIndex | undefined,
+  highlight?: true
+) {
+  const color = ownerColours[owner ?? -1];
+  if (highlight) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = CELL_SIZE;
+  }
+  drawCell(ctx, x, y, color);
+  ctx.shadowBlur = 0;
+
+  const upper = letter.toUpperCase();
+  ctx.font = "12px Verdana, Geneva, Tahoma, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#eee";
+  ctx.fillText(upper, x + CELL_SIZE / 2, y + CELL_SIZE / 2 + 1);
+}
+
+function drawCell(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  background: string
+) {
+  ctx.fillStyle = background;
+  ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+}
+
+export function TableGameGrid({
   game,
   currentStep,
   selectedPlayer,
@@ -67,6 +317,7 @@ export function EmptyCell() {
   return <div className={styles.empty} />;
 }
 const ownerColours = {
+  [-1]: "#777",
   0: "#68D",
   1: "#c4e",
   2: "#862",
@@ -89,7 +340,7 @@ interface LetterProps {
   owner?: PlayerDetails;
   isSelected?: boolean;
   isBombed?: boolean;
-  selectPlayer?: (player: number | null) => void;
+  selectPlayer?: (player: PlayerIndex | null) => void;
 }
 export function LetterCell({
   letter,

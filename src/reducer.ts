@@ -1,12 +1,12 @@
 import { useMemo, useReducer } from "react";
 import placeholderGame from "./placeholder-game";
-import { Game } from "./types";
+import { Game, PlayerIndex } from "./types";
 
 type State = {
   games: Game[];
   game: Game;
   currentStep: number; // index into game timeline
-  selectedPlayer: number | null; // index into players
+  selectedPlayer: PlayerIndex | null;
   showImportDialog: boolean;
   showHotkeyHelp: boolean;
 };
@@ -32,7 +32,7 @@ const creators = {
   stepForwards: () => {},
   stepMeBack: () => {},
   stepMeForwards: () => {},
-  selectPlayer: (player: number | null) => ({ player }),
+  selectPlayer: (player: PlayerIndex | null) => ({ player }),
 };
 
 const handlers: Handlers = {

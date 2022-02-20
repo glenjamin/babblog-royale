@@ -25,10 +25,10 @@ function AppNavbar(props: AppNavbarProps): JSX.Element {
         <Navbar.Brand>
           <img
             src={icon}
-            width="30"
-            height="30"
-            className="d-inline-block align-top"
-            alt="React Bootstrap logo"
+            width="25"
+            height="25"
+            className="align-top"
+            alt="Logo"
           />{" "}
           Babble Royale Log Viewer
         </Navbar.Brand>
