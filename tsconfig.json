@@ -3,7 +3,8 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "checkJs": true,
-    "plugins": [{ "name": "typescript-plugin-css-modules" }]
+    "plugins": [{ "name": "typescript-plugin-css-modules" }],
+    "target": "ES2015"
   },
   "exclude": ["build"]
 }

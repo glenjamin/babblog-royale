@@ -12,6 +12,7 @@ interface GameStepperProps {
   stepForwards: () => void;
   stepMeForwards: () => void;
 }
+
 function GameStepper(props: GameStepperProps): JSX.Element {
   const {
     currentStep,
@@ -26,7 +27,7 @@ function GameStepper(props: GameStepperProps): JSX.Element {
     <>
       <Row className="justify-content-sm-center">
         <Col sm="auto">
-          <Pagination>
+          <Pagination className="mb-1">
             <Pagination.First
               disabled={currentStep === 0}
               onClick={stepMeBack}
@@ -55,14 +56,13 @@ function GameStepper(props: GameStepperProps): JSX.Element {
         </Col>
       </Row>
       <Row className="justify-content-sm-center">
-        <Col sm="auto">
-          <Form.Range
-            min="0"
-            max={max}
-            value={currentStep}
-            onChange={(e) => stepTo(Number(e.target.value))}
-          />
-        </Col>
+        <Form.Range
+          min="0"
+          max={max}
+          value={currentStep}
+          onChange={(e) => stepTo(Number(e.target.value))}
+          style={{ width: "auto" }}
+        />
       </Row>
     </>
   );

@@ -15,6 +15,7 @@ import PlayerList from "./PlayerList";
 import Words from "./Words";
 
 import useAppReducer from "./reducer";
+import PlayFinder from "./PlayFinder";
 
 function App() {
   const [state, actions] = useAppReducer();
@@ -68,7 +69,7 @@ function App() {
                 {...game.timeline[currentStep].player}
               />
             </Stack>
-            <Tabs defaultActiveKey="players" className="mt-3 ps-2">
+            <Tabs defaultActiveKey="players" className="mt-1 ps-2">
               <Tab eventKey="players" title="Players">
                 <Stack className="p-2">
                   <PlayerList
@@ -78,6 +79,11 @@ function App() {
                     currentStep={currentStep}
                     timeline={game.timeline}
                   />
+                </Stack>
+              </Tab>
+              <Tab eventKey="finder" title="Play Finder">
+                <Stack className="p-2">
+                  <PlayFinder game={game} currentStep={currentStep} />
                 </Stack>
               </Tab>
               <Tab eventKey="words" title="Words">

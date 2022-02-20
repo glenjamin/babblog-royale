@@ -1,10 +1,7 @@
 import { useMemo } from "react";
 
 import Button from "react-bootstrap/Button";
-
-// This feels like a hack, but the CSS to make it relative seemed even more
-// complicated.
-const approxGridHeight = 580;
+import { approxTabContentMaxHeight } from "./constants";
 
 interface WordsProps {
   timeline: Array<{
@@ -27,7 +24,7 @@ function Words({ timeline, currentStep, stepTo }: WordsProps): JSX.Element {
   return (
     <ul
       className="list-unstyled"
-      style={{ overflowY: "auto", maxHeight: approxGridHeight }}
+      style={{ overflowY: "auto", maxHeight: approxTabContentMaxHeight }}
     >
       {relevant.map(([i, words]) => (
         <li

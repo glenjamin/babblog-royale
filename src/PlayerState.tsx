@@ -20,7 +20,7 @@ function PlayerState({
   const level = levels.findIndex((n) => n > points);
   return (
     <>
-      <Row className="justify-content-sm-center my-3">
+      <Row className="justify-content-sm-center my-1">
         <Col className="d-flex" sm="auto">
           {letters.map((letter, i) => (
             <LetterCell key={i} letter={letter} />
@@ -33,7 +33,7 @@ function PlayerState({
           </div>
         </Col>
       </Row>
-      <Row className="justify-content-sm-center mb-3">
+      <Row className="justify-content-sm-center mb-1">
         <Col className="d-flex" sm="auto">
           {items.map((item, i) => (
             <BonusCell key={i} bonus={item} />
