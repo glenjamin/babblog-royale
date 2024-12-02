@@ -23,37 +23,20 @@ stream.on("data", (chunk) => parser.parse(chunk.toString()));
 stream.once("close", () => {
   parser.end();
   const games = parser.games();
-  console.dir(games, { depth: 6 });
-
-  const last = games[games.length - 1];
-
-  printBoard(last);
+  printAllWords(games);
 });
 
 /**
  *
- * @param {import("./src/types.js").Game} game
+ * @param {import("./src/types").Game[]} games
  */
-function printBoard(game) {
-  const side = game.board.size;
-  const squares = side * side;
-
-  const grids = game.timeline.map((step) => {
-    /**
-     * @type string[][]
-     */
-    const grid = Array(side)
-      .fill(0)
-      .map(() => []);
-    for (let i = 0; i < squares; i++) {
-      const row = Math.floor(i / side);
-      const col = i % side;
-      grid[row][col] = step.letters[i] || ".";
-    }
-    return grid.map((row) => row.join("")).join("\n");
-  });
-
-  grids.forEach((grid, i) => {
-    console.log("Step %d:\n%s\n", i, grid);
+function printAllWords(games) {
+  games.forEach((game) => {
+    console.log("-- Game #%d --", game.id);
+    game.timeline.forEach((step) => {
+      if (step.player.words.length) {
+        console.log(step.player.words.join(" "));
+      }
+    });
   });
 }
